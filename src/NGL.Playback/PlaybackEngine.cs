@@ -40,6 +40,7 @@ public sealed class PlaybackEngine : IDisposable
     private PreparedFrame? _frame;
     private TimeRange? _loopRange;
     private volatile bool _invalidated;
+    private volatile PreviewQuality _quality = PreviewQuality.Full;
     private volatile bool _disposed;
 
     /// <summary>새 프레임이 준비됐다. 작업 스레드에서 불린다.</summary>
@@ -76,6 +77,17 @@ public sealed class PlaybackEngine : IDisposable
     {
         get { lock (_stateGate) return _loopRange; }
         set { lock (_stateGate) _loopRange = value; }
+    }
+
+    /// <summary>미리보기 화질. 낮추면 디코딩한 프레임을 작게 만들어 재생이 가벼워진다.</summary>
+    public PreviewQuality Quality
+    {
+        get => _quality;
+        set
+        {
+            _quality = value;
+            Invalidate();
+        }
     }
 
     /// <summary>마지막 프레임이 시작하는 시각.</summary>
@@ -240,6 +252,7 @@ public sealed class PlaybackEngine : IDisposable
     /// <summary>주어진 시각의 영상 프레임들을 디코딩해 _frame으로 바꿔 끼운다.</summary>
     private void Prepare(TimeSpan time)
     {
+        _video.Quality = _quality;
         var images = new Dictionary<Clip, SKImage>();
         foreach (var track in _sequence.Tracks)
         {

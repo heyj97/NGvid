@@ -12,6 +12,12 @@ public interface IVideoDecoder : IDisposable
     int Width { get; }
     int Height { get; }
     double FrameRate { get; }
+
+    /// <summary>프레임을 화면에 바로 보이게 하려면 시계 방향으로 돌려야 하는 각도(0·90·180·270).</summary>
+    int Rotation { get; }
+
+    /// <summary>프레임을 원본의 1/n 크기로 내놓는다(1·2·4). 미리보기 화질을 낮춰 빠르게 할 때 쓴다.</summary>
+    int Downscale { get; set; }
     TimeSpan Duration { get; }
 
     /// <summary>

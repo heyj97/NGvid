@@ -177,7 +177,8 @@ public sealed unsafe class FFmpegAudioDecoder : IAudioDecoder
             var pts = _frame->best_effort_timestamp;
             var framePosition = pts == ffmpeg.AV_NOPTS_VALUE
                 ? _target
-                : ffmpeg.av_rescale_q(pts - _startPts, _timeBase, SampleBase);
+                // 0초 앞의 준비용 샘플(Opus 등)은 디코더가 이미 잘라냈는데 시각은 음수로 남는 경우가 있다.
+                : Math.Max(0, ffmpeg.av_rescale_q(pts - _startPts, _timeBase, SampleBase));
 
             _skipFrames = _target - framePosition;
             if (_skipFrames < 0)

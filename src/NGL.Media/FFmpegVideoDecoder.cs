@@ -29,6 +29,31 @@ public sealed unsafe class FFmpegVideoDecoder : IVideoDecoder
     public int Width { get; }
     public int Height { get; }
     public double FrameRate { get; }
+    public int Rotation { get; }
+
+    private int _downscale = 1;
+    private uint _defaultScalerFlags;
+
+    public int Downscale
+    {
+        get => _downscale;
+        set
+        {
+            if (value is not (1 or 2 or 4)) throw new ArgumentOutOfRangeException(nameof(value));
+            if (value == _downscale) return;
+            _downscale = value;
+            _converted = false;
+
+            // 크기를 줄일 때 기본 설정은 색이 몇 단계 틀어진다. 그때만 정확한 반올림과 전체 색차 보간을 켠다.
+            // (원본 크기일 때는 기본 설정이 정확하고 더 빠르다.)
+            if (_scaler != null)
+            {
+                _scaler->flags = value == 1
+                    ? _defaultScalerFlags
+                    : (uint)(SwsFlags.SWS_BILINEAR | SwsFlags.SWS_ACCURATE_RND | SwsFlags.SWS_FULL_CHR_H_INT);
+            }
+        }
+    }
     public TimeSpan Duration { get; }
 
     /// <exception cref="InvalidDataException">열 수 없거나 영상이 없는 파일일 때.</exception>
@@ -64,12 +89,14 @@ public sealed unsafe class FFmpegVideoDecoder : IVideoDecoder
             _next = ffmpeg.av_frame_alloc();
             _bgra = ffmpeg.av_frame_alloc();
             _scaler = ffmpeg.sws_alloc_context();
+            _defaultScalerFlags = _scaler->flags;
 
             _timeBase = stream->time_base;
             _startPts = FFmpegError.FileStart(_format, _timeBase);
 
             Width = _codec->width;
             Height = _codec->height;
+            Rotation = MediaProbe.Rotation(stream);
             FrameRate = MediaProbe.ToDouble(ffmpeg.av_guess_frame_rate(_format, stream, null));
             if (FrameRate <= 0) FrameRate = 30;
             _frameDuration = TimeSpan.FromSeconds(1 / FrameRate);
@@ -191,8 +218,8 @@ public sealed unsafe class FFmpegVideoDecoder : IVideoDecoder
         {
             ffmpeg.av_frame_unref(_bgra);
             _bgra->format = (int)AVPixelFormat.AV_PIX_FMT_BGRA;
-            _bgra->width = _frame->width;
-            _bgra->height = _frame->height;
+            _bgra->width = Math.Max(1, _frame->width / _downscale);
+            _bgra->height = Math.Max(1, _frame->height / _downscale);
             FFmpegError.ThrowIfFailed(ffmpeg.sws_scale_frame(_scaler, _bgra, _frame), "프레임을 변환할 수 없습니다");
             _converted = true;
         }

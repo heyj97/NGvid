@@ -144,6 +144,22 @@ public class PlaybackTests
     }
 
     [Fact]
+    public void 화질을_바꾸면_현재_프레임을_다시_준비하고_화면에는_같은_프레임이_꽉_차게_보인다()
+    {
+        using var engine = Engine(SampleSequence(), new ManualOutput());
+        engine.Seek(Sec(1));
+        WaitUntil(() => ShownFrame(engine) == 30);
+
+        var prepared = 0;
+        engine.FrameReady += () => Interlocked.Increment(ref prepared);
+        engine.Quality = PreviewQuality.Quarter;
+
+        WaitUntil(() => prepared == 1);
+        Assert.Equal(PreviewQuality.Quarter, engine.Quality);
+        Assert.Equal(30, ShownFrame(engine));
+    }
+
+    [Fact]
     public void 끝에_닿으면_마지막_프레임에서_멈추고_다시_누르면_처음부터_재생한다()
     {
         var sequence = SampleSequence();
