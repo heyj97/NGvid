@@ -218,6 +218,12 @@ public sealed unsafe class FFmpegVideoDecoder : IVideoDecoder
         {
             ffmpeg.av_frame_unref(_bgra);
             _bgra->format = (int)AVPixelFormat.AV_PIX_FMT_BGRA;
+            // 결과의 색 기준(감마·색 영역)을 원본과 같게 적어 둔다. 비워 두면 변환기가 감마를 바꿔서
+            // 밝기가 미세하게 달라지고, 그대로 내보내면 원본보다 어두워진다.
+            _bgra->color_trc = _frame->color_trc;
+            _bgra->color_primaries = _frame->color_primaries;
+            _bgra->colorspace = AVColorSpace.AVCOL_SPC_RGB;
+            _bgra->color_range = AVColorRange.AVCOL_RANGE_JPEG;
             _bgra->width = Math.Max(1, _frame->width / _downscale);
             _bgra->height = Math.Max(1, _frame->height / _downscale);
             FFmpegError.ThrowIfFailed(ffmpeg.sws_scale_frame(_scaler, _bgra, _frame), "프레임을 변환할 수 없습니다");

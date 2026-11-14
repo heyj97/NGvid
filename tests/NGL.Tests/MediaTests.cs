@@ -17,6 +17,13 @@ public class MediaTests
 
     private static TimeSpan FrameTime(int frame) => TimeSpan.FromSeconds(frame / 30.0);
 
+    /// <summary>프레임 가운데 픽셀의 밝기(초록 채널).</summary>
+    public static int GrayOf(VideoFrame frame) =>
+        Marshal.ReadByte(frame.Pixels, frame.Height / 2 * frame.Stride + frame.Width / 2 * 4 + 1);
+
+    /// <summary>시험 영상의 n번 프레임이 화면에 보일 때의 밝기.</summary>
+    public static int ExpectedGray(int frame) => (int)Math.Round(3 * frame * 255 / 219.0);
+
     /// <summary>프레임 가운데 픽셀의 밝기에서 프레임 번호를 되찾는다.</summary>
     public static int FrameNumberOf(VideoFrame frame)
     {

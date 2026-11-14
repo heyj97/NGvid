@@ -5,12 +5,14 @@
     <ProjectReference Include="..\NGL.Rendering\NGL.Rendering.csproj" />
     <ProjectReference Include="..\NGL.Audio\NGL.Audio.csproj" />
     <ProjectReference Include="..\NGL.Media\NGL.Media.csproj" />
+    <ProjectReference Include="..\NGL.Playback\NGL.Playback.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>
