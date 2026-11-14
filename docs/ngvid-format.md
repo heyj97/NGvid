@@ -52,11 +52,17 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 
 | `type` | 올릴 수 있는 트랙 | 추가 속성 |
 | --- | --- | --- |
-| `VideoClip` | `VideoTrack` | `assetId`, `sourceStart`(원본에서 재생을 시작하는 위치) |
-| `ImageClip` | `VideoTrack` | `assetId` (`sourceStart`는 쓰지 않음) |
+| `VideoClip` | `VideoTrack` | `assetId`, `sourceStart`(원본에서 재생을 시작하는 위치), 변형 속성 |
+| `ImageClip` | `VideoTrack` | `assetId` (`sourceStart`는 쓰지 않음), 변형 속성 |
 | `TextClip` | `VideoTrack` | `text` |
-| `AudioClip` | `AudioTrack` | `assetId`, `sourceStart` |
+| `AudioClip` | `AudioTrack` | `assetId`, `sourceStart`, `volume`(0~2), `fadeIn`, `fadeOut` |
 | `CaptionClip` | `CaptionTrack` | `text` |
+
+변형 속성(영상·이미지 클립): `x`, `y`(화면 가운데에서 옮긴 픽셀), `scale`(0.1~4), `rotation`(시계 방향, 도), `opacity`(0~1),
+`blend`(`Normal`·`Multiply`·`Screen`·`Overlay`·`Add`), `fit`(`Fit`·`Fill`), `cropLeft`·`cropTop`·`cropRight`·`cropBottom`(0~0.95),
+`flipHorizontal`, `flipVertical`.
+
+오디오 트랙에는 `volume`(0~2), `duckUnder`(자동 감쇠의 기준 트랙 ID), `duckLevel`(감쇠 중 볼륨 0~1)이 더 있다.
 
 ## 예시
 

@@ -328,6 +328,25 @@ public static class SequenceEdits
         return placed.Select(item => item.Clip).ToList();
     }
 
+    /// <summary>
+    /// 복사해 둔 클립의 속성(변형·볼륨·페이드 등)만 targets에 입힌다. 같은 종류의 클립끼리만 적용된다.
+    /// </summary>
+    public static bool PasteProperties(Sequence sequence, IReadOnlyList<ClipCopy> copies, IEnumerable<Clip> targets)
+    {
+        var changed = false;
+        foreach (var target in Editable(sequence, targets))
+        {
+            var source = copies.FirstOrDefault(copy => SequenceSnapshot.Create(copy.Snapshot).GetType() == target.GetType());
+            if (source is null) continue;
+
+            var track = sequence.TrackOf(target)!;
+            track.Clips[track.Clips.IndexOf(target)] = SequenceSnapshot.WithPropertiesOf(target, source.Snapshot);
+            changed = true;
+        }
+
+        return changed;
+    }
+
     private static Track NewTrack(Sequence sequence, Type type) =>
         type == typeof(AudioTrack) ? sequence.AddTrack<AudioTrack>()
         : type == typeof(CaptionTrack) ? sequence.AddTrack<CaptionTrack>()

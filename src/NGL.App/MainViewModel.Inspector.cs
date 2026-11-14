@@ -111,6 +111,7 @@ public partial class MainViewModel
     private void RefreshInspector()
     {
         foreach (var property in InspectorProperties) OnPropertyChanged(property);
+        foreach (var property in VisualProperties) OnPropertyChanged(property);
     }
 
     /// <summary>재생 중인 소리의 좌·우 크기. 읽으면 다시 0부터 잰다.</summary>

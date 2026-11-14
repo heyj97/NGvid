@@ -266,6 +266,7 @@ public sealed unsafe class Mp4Exporter : IExporter
     private static void DrawFrame(SKCanvas canvas, SkiaCompositor compositor, Sequence sequence, VideoFrameSource frames, TimeSpan time)
     {
         var images = new Dictionary<Guid, SKImage>();
+        frames.BeginFrame();
         try
         {
             foreach (var clip in sequence.Tracks.OfType<VideoTrack>().Where(track => !track.Hidden)

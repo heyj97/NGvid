@@ -91,6 +91,9 @@
                         <MenuItem x:Name="ExportItem" Header="내보내기" InputGestureText="Ctrl+E" Click="OnExportClick" Foreground="Black"
                                   IsEnabled="{Binding HasProject}" />
                     </MenuItem>
+                    <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,6" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" Foreground="Black" />
+                    </MenuItem>
                     <MenuItem x:Name="EditMenu" Header="편집" Padding="10,6" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Foreground="Black" />
                         <MenuItem x:Name="RedoItem" Header="{Binding RedoText}" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" Foreground="Black" />
@@ -101,6 +104,8 @@
                         <Separator />
                         <MenuItem x:Name="CopyItem" Header="복사" InputGestureText="Ctrl+C" Command="{Binding CopyCommand}" Foreground="Black" />
                         <MenuItem x:Name="PasteItem" Header="붙여넣기" InputGestureText="Ctrl+V" Command="{Binding PasteCommand}" Foreground="Black" />
+                        <MenuItem x:Name="PastePropertiesItem" Header="속성 붙여넣기" InputGestureText="Ctrl+Alt+V" Command="{Binding PastePropertiesCommand}" Foreground="Black"
+                                  ToolTip="복사한 클립의 변형·볼륨·페이드 등을 선택한 클립에 입힙니다" />
                         <MenuItem x:Name="SelectAllItem" Header="모두 선택" InputGestureText="Ctrl+A" Command="{Binding SelectAllCommand}" Foreground="Black" />
                         <Separator />
                         <MenuItem x:Name="GroupItem" Header="그룹" InputGestureText="Ctrl+G" Command="{Binding GroupCommand}" Foreground="Black" />
@@ -220,7 +225,10 @@
                 </DockPanel>
             </Border>
 
-            <skia:SKGLElement Grid.Column="1" x:Name="Preview" PaintSurface="OnPaintSurface" />
+            <!-- 미리보기: 선택한 클립을 끌어 옮기고 마우스 휠로 크기를 바꾼다. -->
+            <skia:SKGLElement Grid.Column="1" x:Name="Preview" PaintSurface="OnPaintSurface"
+                              MouseLeftButtonDown="OnPreviewMouseDown" MouseMove="OnPreviewMouseMove"
+                              MouseLeftButtonUp="OnPreviewMouseUp" MouseWheel="OnPreviewWheel" />
 
             <!-- 속성 패널: 선택한 오디오 클립과 그 트랙. 값은 Enter나 다른 곳 클릭으로 확정한다. -->
             <Border Grid.Column="2" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="1,0,0,0" Padding="14,12">
@@ -242,18 +250,57 @@
                         <Setter Property="Margin" Value="0,0,0,8" />
                     </Style>
                 </Border.Resources>
-                <Grid>
-                    <TextBlock Text="오디오 클립을 선택하면 볼륨·페이드·자동 감쇠를 설정할 수 있습니다." Foreground="#8E949C" TextWrapping="Wrap">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasAudioSelection}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel>
+                    <TextBlock Text="클립을 선택하면 여기에서 속성을 바꿀 수 있습니다." Foreground="#8E949C" TextWrapping="Wrap"
+                               Visibility="{Binding HasNoSelection, Converter={StaticResource Visible}}" />
+
+                    <!-- 영상·이미지 클립 -->
+                    <StackPanel x:Name="VisualInspector" Margin="0,0,0,16" Visibility="{Binding HasVisualSelection, Converter={StaticResource Visible}}">
+                        <TextBlock x:Name="VisualTitle" Text="{Binding VisualTitle}" FontWeight="Medium" Margin="0,0,0,12" />
+                        <DockPanel>
+                            <TextBox x:Name="PositionYBox" DockPanel.Dock="Right" Width="56" Margin="6,0,0,0" Text="{Binding PositionY, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="아래로 (픽셀)" />
+                            <TextBox x:Name="PositionXBox" DockPanel.Dock="Right" Width="56" Text="{Binding PositionX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
+                            <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" ToolTip="화면 가운데에서 옮긴 거리. 미리보기에서 끌어도 됩니다." />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="ScaleBox" DockPanel.Dock="Right" Text="{Binding ScalePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="10~400. 미리보기에서 마우스 휠로도 바꿀 수 있습니다." />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="RotationBox" DockPanel.Dock="Right" Text="{Binding RotationDegrees, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="회전 (도)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="OpacityBox" DockPanel.Dock="Right" Text="{Binding OpacityPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="불투명도 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <ComboBox x:Name="BlendBox" DockPanel.Dock="Right" Width="110" ItemsSource="{x:Static local:MainViewModel.BlendNames}"
+                                      SelectedIndex="{Binding BlendIndex}" Focusable="False" />
+                            <TextBlock Text="블렌드 모드" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <ComboBox x:Name="FitBox" DockPanel.Dock="Right" Width="150" ItemsSource="{x:Static local:MainViewModel.FitNames}"
+                                      SelectedIndex="{Binding FitIndex}" Focusable="False" />
+                            <TextBlock Text="화면 맞춤" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <TextBlock Text="자르기 (%)  왼쪽 · 위 · 오른쪽 · 아래" Style="{StaticResource Label}" Margin="0,4,0,6" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBox x:Name="CropLeftBox" Width="52" Margin="0,0,6,0" Text="{Binding CropLeft, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBox x:Name="CropTopBox" Width="52" Margin="0,0,6,0" Text="{Binding CropTop, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBox x:Name="CropRightBox" Width="52" Margin="0,0,6,0" Text="{Binding CropRight, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBox x:Name="CropBottomBox" Width="52" Text="{Binding CropBottom, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <CheckBox x:Name="FlipHorizontalBox" Content="좌우 뒤집기" IsChecked="{Binding FlipHorizontal}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,14,0" />
+                            <CheckBox x:Name="FlipVerticalBox" Content="상하 뒤집기" IsChecked="{Binding FlipVertical}" Foreground="#E6E7EA" Focusable="False" />
+                        </StackPanel>
+                        <Button x:Name="ResetTransformButton" Content="변형 초기화" Command="{Binding ResetTransformCommand}" Margin="0"
+                                ToolTip="위치·크기·회전·자르기·뒤집기를 처음 상태로 되돌립니다" />
+                    </StackPanel>
+
+                    <!-- 오디오 클립과 그 트랙 -->
                     <StackPanel x:Name="Inspector" Visibility="{Binding HasAudioSelection, Converter={StaticResource Visible}}">
                         <TextBlock x:Name="InspectorTitle" Text="{Binding InspectorTitle}" FontWeight="Medium" Margin="0,0,0,12" />
 
@@ -288,7 +335,8 @@
                             <TextBlock Text="감쇠 중 볼륨 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
                     </StackPanel>
-                </Grid>
+                </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 

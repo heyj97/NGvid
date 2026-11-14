@@ -225,6 +225,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt) && (e.Key == Key.V || e.SystemKey == Key.V))
+        {
+            commands.PastePropertiesCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
         if (Keyboard.Modifiers == ModifierKeys.Shift && e.Key == Key.Delete)
         {
             commands.RippleDeleteCommand.Execute(null);
@@ -267,10 +274,83 @@ public partial class MainWindow : Window
         var preset = project.Sequence.Preset;
         var target = SkiaCompositor.Fit(preset.Width, preset.Height, area);
 
+        _previewTarget = target;
+        _previewPixelsPerDip = e.BackendRenderTarget.Width / Math.Max(1, Preview.ActualWidth);
+
         canvas.Save();
         canvas.Translate(target.Left, target.Top);
         canvas.Scale(target.Width / preset.Width);
         _viewModel.Render(canvas);
+        if (_viewModel.ShowSafeArea) DrawSafeArea(canvas, preset.Width, preset.Height);
         canvas.Restore();
+    }
+
+    /// <summary>가장자리에서 5%(동작 안전)와 10%(제목 안전) 안쪽에 선을 그린다. 기기에 따라 잘릴 수 있는 범위다.</summary>
+    private static void DrawSafeArea(SKCanvas canvas, float width, float height)
+    {
+        using var paint = new SKPaint { Color = SKColors.White.WithAlpha(110), Style = SKPaintStyle.Stroke, StrokeWidth = 3 };
+        foreach (var inset in new[] { 0.05f, 0.10f })
+            canvas.DrawRect(width * inset, height * inset, width * (1 - 2 * inset), height * (1 - 2 * inset), paint);
+    }
+
+    // ───── 미리보기에서 직접 조작 ─────
+
+    private SKRect _previewTarget;        // 미리보기 안에서 시퀀스가 그려진 영역(픽셀)
+    private double _previewPixelsPerDip = 1;
+    private Point? _previewDragStart;     // 끌기 시작한 곳(시퀀스 좌표)
+    private List<(VisualClip Clip, double X, double Y)> _previewDragClips = [];
+
+    /// <summary>마우스 위치를 시퀀스의 픽셀 좌표로 바꾼다.</summary>
+    private Point ToSequence(MouseEventArgs e)
+    {
+        var position = e.GetPosition(Preview);
+        var scale = _previewTarget.Width / (_viewModel.Project?.Sequence.Preset.Width ?? 1);
+        return new Point(
+            (position.X * _previewPixelsPerDip - _previewTarget.Left) / scale,
+            (position.Y * _previewPixelsPerDip - _previewTarget.Top) / scale);
+    }
+
+    private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // 선택한 화면 클립이 없으면 지금 보이는 맨 위 클립을 선택한다.
+        if (_viewModel.SelectedVisualPositions().Count == 0 && _viewModel.TopVisualAtPlayhead() is { } top) _viewModel.Select(top);
+
+        _previewDragClips = _viewModel.SelectedVisualPositions();
+        if (_previewDragClips.Count == 0) return;
+
+        _previewDragStart = ToSequence(e);
+        _viewModel.BeginLiveEdit();
+        Preview.CaptureMouse();
+    }
+
+    private void OnPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_previewDragStart is not { } start) return;
+
+        var now = ToSequence(e);
+        var (dx, dy) = (Math.Round(now.X - start.X), Math.Round(now.Y - start.Y));
+        _viewModel.LiveEdit(() =>
+        {
+            foreach (var (clip, x, y) in _previewDragClips)
+            {
+                clip.X = x + dx;
+                clip.Y = y + dy;
+            }
+        });
+    }
+
+    private void OnPreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_previewDragStart is null) return;
+        _previewDragStart = null;
+        Preview.ReleaseMouseCapture();
+        _viewModel.CommitLiveEdit("위치 변경");
+    }
+
+    /// <summary>휠 한 칸에 5%씩 크기를 바꾼다.</summary>
+    private void OnPreviewWheel(object sender, MouseWheelEventArgs e)
+    {
+        _viewModel.ScaleSelection(Math.Pow(1.05, e.Delta / 120.0));
+        e.Handled = true;
     }
 }

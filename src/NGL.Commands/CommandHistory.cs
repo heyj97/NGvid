@@ -40,6 +40,10 @@ public sealed class SequenceEditCommand(string name, Sequence sequence, Action c
 
     public string Name => name;
 
+    /// <summary>이미 끝난 변경(마우스로 끌어서 바꾼 것 등)을 전후 상태로부터 명령으로 만든다.</summary>
+    public static SequenceEditCommand Completed(string name, Sequence sequence, string before, string after) =>
+        new(name, sequence, () => { }) { _before = before, _after = after };
+
     /// <summary>실행했더니 실제로 달라진 것이 있는가. 달라진 것이 없으면 기록할 필요가 없다.</summary>
     public bool Changed => _before != _after;
 

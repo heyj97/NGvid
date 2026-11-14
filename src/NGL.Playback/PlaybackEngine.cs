@@ -270,6 +270,7 @@ public sealed class PlaybackEngine : IDisposable
     private void Prepare(TimeSpan time)
     {
         _video.Quality = _quality;
+        _video.BeginFrame();
         var images = new Dictionary<Guid, SKImage>();
 
         // 목록은 잠근 채로 훑어 두고, 오래 걸리는 디코딩은 잠금 밖에서 한다.

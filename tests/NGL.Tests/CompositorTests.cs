@@ -125,12 +125,35 @@ public class CompositorTests
         foreach (var (timelineFrame, sourceFrame) in new[] { (30, 10), (35, 15), (59, 39), (31, 11) })
         {
             var time = sequence.TimeAt(timelineFrame);
+            frames.BeginFrame();
             using var image = frames.GetImage(clip, time);
             using var result = Render(sequence, time, _ => image);
 
             var gray = result.GetPixel(960, 540);
             Assert.Equal(sourceFrame, (int)Math.Round(gray.Green * 219.0 / 255.0 / 3));
             Assert.Equal(gray, result.GetPixel(3, 3));
+        }
+    }
+
+    [Fact]
+    public void 같은_원본을_쓰는_클립이_겹쳐도_각자의_프레임을_낸다()
+    {
+        // 화면 속 화면처럼 같은 영상의 다른 부분 둘을 동시에 보여주는 경우
+        var first = new VideoClip { Range = new TimeRange(Sec(0), Sec(1)), SourceStart = TimeSpan.FromSeconds(10 / 30.0) };
+        var second = new VideoClip { Range = new TimeRange(Sec(0), Sec(1)), SourceStart = TimeSpan.FromSeconds(40 / 30.0) };
+        using var frames = new VideoFrameSource(_ => MediaTests.SamplePath);
+
+        for (var n = 0; n < 5; n++)
+        {
+            var time = TimeSpan.FromSeconds((n + 0.5) / 30.0);
+            frames.BeginFrame();
+            using var a = frames.GetImage(first, time);
+            using var b = frames.GetImage(second, time);
+            using var bitmapA = SKBitmap.FromImage(a);
+            using var bitmapB = SKBitmap.FromImage(b);
+
+            Assert.Equal(10 + n, (int)Math.Round(bitmapA.GetPixel(160, 90).Green * 219.0 / 255.0 / 3));
+            Assert.Equal(40 + n, (int)Math.Round(bitmapB.GetPixel(160, 90).Green * 219.0 / 255.0 / 3));
         }
     }
 

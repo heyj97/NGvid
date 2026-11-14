@@ -38,6 +38,24 @@ public static class SequenceSnapshot
         return node.Deserialize<Clip>(NgvidJson.Options)!;
     }
 
+    /// <summary>
+    /// source의 속성(변형·볼륨·페이드 등)을 입힌 target의 사본을 만든다.
+    /// 어떤 클립인지를 정하는 값(ID, 위치, 원본, 연결·그룹, 문구)은 target의 것을 그대로 둔다.
+    /// </summary>
+    public static Clip WithPropertiesOf(Clip target, string sourceSnapshot)
+    {
+        var node = JsonNode.Parse(Take(target))!.AsObject();
+        foreach (var (name, value) in JsonNode.Parse(sourceSnapshot)!.AsObject())
+        {
+            if (!Identity.Contains(name)) node[name] = value?.DeepClone();
+        }
+
+        return node.Deserialize<Clip>(NgvidJson.Options)!;
+    }
+
+    private static readonly HashSet<string> Identity =
+        ["type", "id", "range", "assetId", "sourceStart", "linkId", "groupId", "text"];
+
     /// <summary>내용이 같고 ID만 새로운 클립.</summary>
     public static Clip Clone(Clip clip) => Create(Take(clip));
 }

@@ -446,6 +446,40 @@ public class EditTests
     }
 
     [Fact]
+    public void 속성_붙여넣기는_같은_종류의_클립에_속성만_입힌다()
+    {
+        var sequence = new Sequence();
+        var asset = new MediaAsset { Kind = MediaKind.Video, Duration = Sec(2), HasAudio = true };
+        var source = sequence.Add(asset);
+        var target = sequence.Add(asset);
+        var (video, audio) = ((VideoClip)source[0], (AudioClip)source[1]);
+        video.Scale = 0.5;
+        video.X = 300;
+        video.Opacity = 0.7;
+        video.Blend = BlendMode.Screen;
+        video.SourceStart = Sec(1);
+        audio.Volume = 0.4;
+        audio.FadeOut = Sec(1.5);
+
+        var copies = SequenceEdits.Copy(sequence, source);
+        Assert.True(SequenceEdits.PasteProperties(sequence, copies, target));
+
+        // 속성은 옮겨지고, 어떤 클립인지(ID·위치·원본 위치·연결)는 그대로다.
+        var pastedVideo = Assert.IsType<VideoClip>(sequence.Tracks[0].Clips[1]);
+        var pastedAudio = Assert.IsType<AudioClip>(sequence.Tracks[1].Clips[1]);
+        Assert.Equal((0.5, 300.0, 0.7, BlendMode.Screen), (pastedVideo.Scale, pastedVideo.X, pastedVideo.Opacity, pastedVideo.Blend));
+        Assert.Equal((0.4, Sec(1.5)), (pastedAudio.Volume, pastedAudio.FadeOut));
+        Assert.Equal((target[0].Id, Range(2, 2), Sec(0), target[0].LinkId), (pastedVideo.Id, pastedVideo.Range, pastedVideo.SourceStart, pastedVideo.LinkId));
+        Assert.Equal((target[1].Id, Range(2, 2), target[1].LinkId), (pastedAudio.Id, pastedAudio.Range, pastedAudio.LinkId));
+
+        // 종류가 다른 클립에는 입히지 않는다.
+        var image = new ImageClip { Range = Range(10, 1) };
+        sequence.Tracks[0].Clips.Add(image);
+        Assert.False(SequenceEdits.PasteProperties(sequence, SequenceEdits.Copy(sequence, [audio]), [image]));
+        Assert.False(SequenceEdits.PasteProperties(sequence, [], [pastedVideo]));
+    }
+
+    [Fact]
     public void 붙여넣을_트랙이_없어졌으면_같은_종류의_트랙에_놓는다()
     {
         var sequence = new Sequence();

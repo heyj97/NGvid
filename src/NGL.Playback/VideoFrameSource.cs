@@ -18,7 +18,13 @@ public enum PreviewQuality
 /// </summary>
 public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposable
 {
-    private readonly Dictionary<Guid, IVideoDecoder?> _decoders = []; // 열 수 없는 원본이면 null
+    // 같은 원본을 쓰는 클립 여러 개가 한 화면에 겹치면(화면 속 화면 등) 디코더 하나로는 프레임마다 왔다 갔다
+    // 탐색해야 해서 느리다. 한 프레임 안에서 같은 원본이 n번째로 요청되면 n번째 디코더를 쓴다.
+    private readonly Dictionary<(Guid Asset, int Slot), IVideoDecoder?> _decoders = []; // 열 수 없는 원본이면 null
+    private readonly Dictionary<Guid, int> _usedThisFrame = [];
+
+    /// <summary>새 프레임을 준비하기 시작할 때 부른다.</summary>
+    public void BeginFrame() => _usedThisFrame.Clear();
 
     public PreviewQuality Quality { get; set; } = PreviewQuality.Full;
 
@@ -34,10 +40,12 @@ public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposa
 
     private SKImage? GetImage(Guid assetId, TimeSpan sourceTime)
     {
-        if (!_decoders.TryGetValue(assetId, out var decoder))
+        var slot = _usedThisFrame.GetValueOrDefault(assetId);
+        _usedThisFrame[assetId] = slot + 1;
+        if (!_decoders.TryGetValue((assetId, slot), out var decoder))
         {
             decoder = Open(assetId);
-            _decoders.Add(assetId, decoder);
+            _decoders.Add((assetId, slot), decoder);
         }
 
         if (decoder is null) return null;

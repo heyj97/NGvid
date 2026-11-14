@@ -113,6 +113,11 @@ public partial class MainViewModel
         RefreshInspector();
     }
 
+    /// <summary>복사한 클립의 속성(변형·볼륨·페이드 등)만 선택한 클립에 입힌다.</summary>
+    [RelayCommand]
+    private void PasteProperties() =>
+        EditSelection("속성 붙여넣기", (sequence, clips) => SequenceEdits.PasteProperties(sequence, _clipboard, clips));
+
     /// <summary>선택한 클립들을 anchor가 newStart에 오도록 옮긴다. track은 anchor를 옮겨 놓을 트랙.</summary>
     public void MoveSelection(Clip anchor, TimeSpan newStart, Track? track)
     {
