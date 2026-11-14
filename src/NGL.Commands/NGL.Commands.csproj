@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NGL.Core\NGL.Core.csproj" />
+    <ProjectReference Include="..\NGL.IO\NGL.IO.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

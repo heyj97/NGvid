@@ -18,6 +18,8 @@ internal static class NgvidJson
         // 손으로 고친 파일에서 "type"이 맨 앞에 없어도 읽는다.
         AllowOutOfOrderMetadataProperties = true,
         Converters = { new JsonStringEnumConverter() },
+        // 값이 없는 속성(연결·그룹이 없는 클립의 linkId 등)은 적지 않는다.
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { PopulateReadOnlyObjects, AddDerivedTypes } },
     };
 

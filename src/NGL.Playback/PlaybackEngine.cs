@@ -14,10 +14,10 @@ namespace NGL.Playback;
 public sealed class PlaybackEngine : IDisposable
 {
     /// <summary>화면에 그릴 준비가 끝난 한 프레임 분량의 이미지.</summary>
-    private sealed class PreparedFrame(TimeSpan time, Dictionary<Clip, SKImage> images) : IDisposable
+    private sealed class PreparedFrame(TimeSpan time, Dictionary<Guid, SKImage> images) : IDisposable
     {
         public TimeSpan Time { get; } = time;
-        public Dictionary<Clip, SKImage> Images { get; } = images;
+        public Dictionary<Guid, SKImage> Images { get; } = images; // 클립 ID별 (실행 취소로 클립 객체가 바뀌어도 찾을 수 있게)
 
         public void Dispose()
         {
@@ -174,7 +174,7 @@ public sealed class PlaybackEngine : IDisposable
         {
             var frame = _frame;
             _compositor.Render(canvas, _sequence, frame?.Time ?? TimeSpan.Zero,
-                clip => frame?.Images.GetValueOrDefault(clip));
+                clip => frame?.Images.GetValueOrDefault(clip.Id));
         }
     }
 
@@ -267,7 +267,7 @@ public sealed class PlaybackEngine : IDisposable
     private void Prepare(TimeSpan time)
     {
         _video.Quality = _quality;
-        var images = new Dictionary<Clip, SKImage>();
+        var images = new Dictionary<Guid, SKImage>();
 
         // 목록은 잠근 채로 훑어 두고, 오래 걸리는 디코딩은 잠금 밖에서 한다.
         List<Clip> visible;
@@ -291,7 +291,7 @@ public sealed class PlaybackEngine : IDisposable
                         ImageClip still => _video.GetImage(still),
                         _ => null,
                     };
-                    if (image is not null) images.Add(clip, image);
+                    if (image is not null) images[clip.Id] = image;
                 }
                 catch (InvalidDataException)
                 {

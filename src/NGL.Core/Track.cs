@@ -54,6 +54,9 @@ public sealed class ClipCollection : Collection<Clip>
 
     internal ClipCollection(Track track) => _track = track;
 
+    /// <summary>시작 시각 순으로 정렬한다.</summary>
+    public void SortByStart() => ((List<Clip>)Items).Sort((a, b) => a.Range.Start.CompareTo(b.Range.Start));
+
     protected override void InsertItem(int index, Clip item) => base.InsertItem(index, Checked(item));
 
     protected override void SetItem(int index, Clip item) => base.SetItem(index, Checked(item));

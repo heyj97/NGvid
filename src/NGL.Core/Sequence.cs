@@ -85,6 +85,9 @@ public sealed class Sequence
         Tracks.Insert(to, track);
     }
 
+    /// <summary>클립이 놓인 트랙. 이 시퀀스의 클립이 아니면 null.</summary>
+    public Track? TrackOf(Clip clip) => Tracks.FirstOrDefault(track => track.Clips.Contains(clip));
+
     // ───── 클립 배치 ─────
 
     /// <summary>보관함의 원본을 트랙 맨 뒤에 클립으로 놓는다.</summary>
@@ -123,7 +126,9 @@ public sealed class Sequence
         main.Clips.Add(clip);
         if (linked is null) return [clip];
 
-        var sound = new AudioClip { AssetId = asset.Id, Range = range };
+        // 영상과 그 소리를 연결해 둔다.
+        clip.LinkId = Guid.NewGuid();
+        var sound = new AudioClip { AssetId = asset.Id, Range = range, LinkId = clip.LinkId };
         linked.Clips.Add(sound);
         return [clip, sound];
     }

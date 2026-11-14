@@ -15,25 +15,26 @@ public abstract class Clip
             ? value
             : throw new ArgumentOutOfRangeException(nameof(value), "클립은 0초보다 앞에 놓을 수 없습니다.");
     }
+
+    /// <summary>같은 값을 가진 클립끼리 연결되어 있다(영상과 그 소리). 함께 선택·이동·트리밍된다.</summary>
+    public Guid? LinkId { get; set; }
+
+    /// <summary>같은 값을 가진 클립끼리 그룹이다. 함께 선택·이동·삭제된다.</summary>
+    public Guid? GroupId { get; set; }
 }
 
 /// <summary>보관함의 원본(MediaAsset)을 가리키는 클립. 표시 이름은 원본의 이름을 따른다.</summary>
 public abstract class MediaClip : Clip
 {
     public Guid AssetId { get; set; }
-}
 
-public sealed class VideoClip : MediaClip
-{
-    /// <summary>원본에서 재생을 시작하는 위치(앞쪽 트리밍).</summary>
+    /// <summary>원본에서 재생을 시작하는 위치(앞쪽 트리밍). 이미지는 쓰지 않는다.</summary>
     public TimeSpan SourceStart { get; set; }
 }
 
-public sealed class AudioClip : MediaClip
-{
-    /// <summary>원본에서 재생을 시작하는 위치(앞쪽 트리밍).</summary>
-    public TimeSpan SourceStart { get; set; }
-}
+public sealed class VideoClip : MediaClip;
+
+public sealed class AudioClip : MediaClip;
 
 public sealed class ImageClip : MediaClip;
 
