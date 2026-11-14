@@ -88,6 +88,8 @@
                         <Separator />
                         <MenuItem Header="미디어 가져오기" InputGestureText="Ctrl+I" Click="OnImportClick" Foreground="Black"
                                   IsEnabled="{Binding HasProject}" />
+                        <MenuItem x:Name="ExportItem" Header="내보내기" InputGestureText="Ctrl+E" Click="OnExportClick" Foreground="Black"
+                                  IsEnabled="{Binding HasProject}" />
                     </MenuItem>
                     <MenuItem x:Name="EditMenu" Header="편집" Padding="10,6" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Foreground="Black" />
@@ -108,6 +110,8 @@
                     </MenuItem>
                 </Menu>
 
+                <Button x:Name="ExportButton" DockPanel.Dock="Right" Content="내보내기" Click="OnExportClick" Style="{StaticResource Primary}"
+                        Margin="10,0,0,0" IsEnabled="{Binding HasProject}" ToolTip="MP4로 내보내기 (Ctrl+E)" />
                 <ComboBox x:Name="QualityBox" DockPanel.Dock="Right" SelectedIndex="{Binding QualityIndex}" Focusable="False"
                           Width="100" VerticalAlignment="Center" ToolTip="미리보기 화질">
                     <ComboBoxItem Content="화질 전체" />

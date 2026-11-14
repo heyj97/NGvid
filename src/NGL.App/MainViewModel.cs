@@ -41,6 +41,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isPlaying;
 
     public bool HasProject => Project is not null;
+
+    /// <summary>열려 있는 프로젝트의 폴더.</summary>
+    public string? FolderPath => _folder;
+
+    public void Pause()
+    {
+        _engine?.Pause();
+        Tick();
+    }
     public string Title => Project is null ? "NGvid" : $"{Project.Name} - NGvid";
     public string PlayButtonText => IsPlaying ? "일시정지" : "재생";
 

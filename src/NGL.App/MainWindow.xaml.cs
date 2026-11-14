@@ -131,6 +131,14 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) _viewModel.Import(dialog.FileNames);
     }
 
+    /// <summary>재생을 멈추고 내보내기 창을 연다.</summary>
+    private void OnExportClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.Project is not { } project || _viewModel.FolderPath is not { } folder) return;
+        _viewModel.Pause();
+        new ExportWindow(project, folder) { Owner = this }.ShowDialog();
+    }
+
     /// <summary>파일을 끌어 놓으면: 프로젝트 파일은 열고, 그 밖의 파일은 보관함으로 가져온다.</summary>
     private void OnDrop(object sender, DragEventArgs e)
     {
@@ -186,6 +194,7 @@ public partial class MainWindow : Window
                 case Key.O: OnOpenClick(this, e); break;
                 case Key.S: commands.SaveCommand.Execute(null); break;
                 case Key.I when commands.HasProject: OnImportClick(this, e); break;
+                case Key.E when commands.HasProject: OnExportClick(this, e); break;
                 // 글자를 입력하는 중에는 Ctrl+Z·C·V·A가 입력 칸의 것이다.
                 case Key.Z when !typing: commands.UndoCommand.Execute(null); break;
                 case Key.Y when !typing: commands.RedoCommand.Execute(null); break;
