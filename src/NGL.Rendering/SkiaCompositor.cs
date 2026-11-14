@@ -34,7 +34,7 @@ public sealed class SkiaCompositor : IFrameCompositor
             {
                 if (!clip.Range.Contains(time) || imageOf(clip) is not { } image) continue;
 
-                if (clip is VisualClip visual) Draw(canvas, image, visual, frame);
+                if (clip is VisualClip visual) Draw(canvas, image, visual, frame, time);
                 else canvas.DrawImage(image, Fit(image.Width, image.Height, frame), Sampling);
             }
         }
@@ -43,8 +43,15 @@ public sealed class SkiaCompositor : IFrameCompositor
     }
 
     /// <summary>클립의 자르기·화면 맞춤·위치·회전·크기·뒤집기·불투명도·블렌드를 적용해 그린다.</summary>
-    private void Draw(SKCanvas canvas, SKImage image, VisualClip clip, SKRect frame)
+    private void Draw(SKCanvas canvas, SKImage image, VisualClip clip, SKRect frame, TimeSpan time)
     {
+        // 키프레임이 있는 속성은 이 시각의 값을 쓴다.
+        var x = clip.ValueAt(AnimatedProperty.X, clip.X, time);
+        var y = clip.ValueAt(AnimatedProperty.Y, clip.Y, time);
+        var scale = Math.Clamp(clip.ValueAt(AnimatedProperty.Scale, clip.Scale, time), 0.1, 4);
+        var rotation = clip.ValueAt(AnimatedProperty.Rotation, clip.Rotation, time);
+        var opacity = Math.Clamp(clip.ValueAt(AnimatedProperty.Opacity, clip.Opacity, time), 0, 1);
+
         var source = SKRect.Create(
             (float)(image.Width * clip.CropLeft),
             (float)(image.Height * clip.CropTop),
@@ -53,11 +60,11 @@ public sealed class SkiaCompositor : IFrameCompositor
         var size = PlacedSize(source.Width, source.Height, frame, clip.Fit);
 
         canvas.Save();
-        canvas.Translate(frame.MidX + (float)clip.X, frame.MidY + (float)clip.Y);
-        canvas.RotateDegrees((float)clip.Rotation);
-        canvas.Scale((float)clip.Scale * (clip.FlipHorizontal ? -1 : 1), (float)clip.Scale * (clip.FlipVertical ? -1 : 1));
+        canvas.Translate(frame.MidX + (float)x, frame.MidY + (float)y);
+        canvas.RotateDegrees((float)rotation);
+        canvas.Scale((float)scale * (clip.FlipHorizontal ? -1 : 1), (float)scale * (clip.FlipVertical ? -1 : 1));
 
-        _layer.Color = SKColors.White.WithAlpha((byte)Math.Round(clip.Opacity * 255));
+        _layer.Color = SKColors.White.WithAlpha((byte)Math.Round(opacity * 255));
         _layer.BlendMode = clip.Blend switch
         {
             BlendMode.Multiply => SKBlendMode.Multiply,

@@ -15,7 +15,7 @@ public static class AudioMixer
     /// <summary>클립 볼륨에 페이드 인·아웃을 곱한 값.</summary>
     public static double ClipGain(AudioClip clip, TimeSpan time)
     {
-        var gain = clip.Volume;
+        var gain = Math.Clamp(clip.ValueAt(AnimatedProperty.Volume, clip.Volume, time), 0, 2); // 키프레임이 있으면 이 시각의 볼륨
         var fromStart = time - clip.Range.Start;
         var toEnd = clip.Range.End - time;
         if (clip.FadeIn > TimeSpan.Zero && fromStart < clip.FadeIn) gain *= Math.Clamp(fromStart / clip.FadeIn, 0, 1);

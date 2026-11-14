@@ -21,6 +21,41 @@ public abstract class Clip
 
     /// <summary>같은 값을 가진 클립끼리 그룹이다. 함께 선택·이동·삭제된다.</summary>
     public Guid? GroupId { get; set; }
+
+    /// <summary>속성별 키프레임(시간순). 키프레임이 없는 속성은 고정된 값을 쓴다.</summary>
+    public Dictionary<AnimatedProperty, List<Keyframe>> Keyframes { get; } = [];
+
+    /// <summary>타임라인의 time에 속성의 값. 키프레임이 없으면 fixedValue.</summary>
+    public double ValueAt(AnimatedProperty property, double fixedValue, TimeSpan time) =>
+        Keyframes.TryGetValue(property, out var keys) && keys.Count > 0
+            ? Animation.Evaluate(keys, time - Range.Start)
+            : fixedValue;
+
+    /// <summary>키프레임을 찍는다. 같은 시각에 이미 있으면 바꾼다. time은 클립의 시작에서 잰 시간.</summary>
+    public void SetKeyframe(AnimatedProperty property, Keyframe keyframe)
+    {
+        if (!Keyframes.TryGetValue(property, out var keys)) Keyframes[property] = keys = [];
+        keys.RemoveAll(key => key.Time == keyframe.Time);
+        keys.Add(keyframe);
+        keys.Sort((a, b) => a.Time.CompareTo(b.Time));
+    }
+
+    /// <summary>그 시각의 키프레임을 지운다. 마지막 하나까지 지우면 속성은 다시 고정된 값을 쓴다.</summary>
+    public bool RemoveKeyframe(AnimatedProperty property, TimeSpan time)
+    {
+        if (!Keyframes.TryGetValue(property, out var keys) || keys.RemoveAll(key => key.Time == time) == 0) return false;
+        if (keys.Count == 0) Keyframes.Remove(property);
+        return true;
+    }
+
+    /// <summary>모든 키프레임을 offset만큼 옮긴다. 클립의 시작이 바뀌어도 움직임이 화면 내용과 어긋나지 않게 할 때 쓴다.</summary>
+    public void ShiftKeyframes(TimeSpan offset)
+    {
+        foreach (var keys in Keyframes.Values)
+        {
+            for (var i = 0; i < keys.Count; i++) keys[i] = keys[i] with { Time = keys[i].Time + offset };
+        }
+    }
 }
 
 /// <summary>보관함의 원본(MediaAsset)을 가리키는 클립. 표시 이름은 원본의 이름을 따른다.</summary>

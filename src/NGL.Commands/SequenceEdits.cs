@@ -55,6 +55,7 @@ public static class SequenceEdits
             var tail = SequenceSnapshot.Clone(clip);
             tail.Range = new TimeRange(time, clip.Range.End - time);
             if (tail is MediaClip media) media.SourceStart += head;
+            tail.ShiftKeyframes(-head); // 뒤 조각의 움직임이 자르기 전과 똑같이 이어지게
             if (clip.LinkId is { } link)
             {
                 if (!newLinks.TryGetValue(link, out var newLink)) newLinks[link] = newLink = Guid.NewGuid();
@@ -208,6 +209,7 @@ public static class SequenceEdits
         foreach (var each in clips)
         {
             each.Range = new TimeRange(each.Range.Start + delta, each.Range.Duration - delta);
+            each.ShiftKeyframes(-delta); // 움직임은 화면 내용에 붙어 있게
             if (HasSourceTime(each)) ((MediaClip)each).SourceStart += delta;
         }
 
@@ -342,6 +344,33 @@ public static class SequenceEdits
             var track = sequence.TrackOf(target)!;
             track.Clips[track.Clips.IndexOf(target)] = SequenceSnapshot.WithPropertiesOf(target, source.Snapshot);
             changed = true;
+        }
+
+        return changed;
+    }
+
+    // ───── 애니메이션 프리셋 ─────
+
+    /// <summary>그 종류의 클립에 키프레임을 찍을 수 있는 속성인가.</summary>
+    public static bool CanAnimate(Clip clip, AnimatedProperty property) => property == AnimatedProperty.Volume
+        ? clip is AudioClip
+        : clip is VisualClip;
+
+    /// <summary>클립의 움직임(모든 키프레임)을 프리셋으로 만든다.</summary>
+    public static AnimationPreset ToPreset(Clip clip, string name) =>
+        new(name, clip.Keyframes.ToDictionary(pair => pair.Key, pair => pair.Value.ToList()));
+
+    /// <summary>프리셋의 움직임을 클립들에 입힌다. 프리셋에 있는 속성의 기존 키프레임은 바뀐다.</summary>
+    public static bool ApplyPreset(Sequence sequence, IEnumerable<Clip> clips, AnimationPreset preset)
+    {
+        var changed = false;
+        foreach (var clip in Editable(sequence, clips))
+        {
+            foreach (var (property, keys) in preset.Keyframes.Where(pair => CanAnimate(clip, pair.Key) && pair.Value.Count > 0))
+            {
+                clip.Keyframes[property] = keys.OrderBy(key => key.Time).ToList();
+                changed = true;
+            }
         }
 
         return changed;
