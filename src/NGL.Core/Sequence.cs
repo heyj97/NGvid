@@ -94,13 +94,13 @@ public sealed class Sequence
     /// 보관함의 원본을 클립으로 놓는다. 맞는 종류의 트랙이 없으면 만든다.
     /// 소리가 있는 영상은 영상 클립과 오디오 클립을 같은 위치에 함께 놓는다.
     /// </summary>
-    /// <param name="track">놓을 트랙. 원본 종류와 맞지 않거나 null이면 그 종류의 첫 트랙.</param>
+    /// <param name="track">놓을 트랙. 원본 종류와 맞지 않거나 잠겨 있거나 null이면 그 종류의 잠기지 않은 첫 트랙.</param>
     /// <param name="start">놓을 시각. null이거나 그 자리에 다른 클립이 있으면 트랙 맨 뒤에 놓는다.</param>
     public IReadOnlyList<Clip> Add(MediaAsset asset, Track? track = null, TimeSpan? start = null)
     {
         Track main = asset.Kind == MediaKind.Audio
-            ? track as AudioTrack ?? FirstOrNew<AudioTrack>()
-            : track as VideoTrack ?? FirstOrNew<VideoTrack>();
+            ? track as AudioTrack is { Locked: false } audioTrack ? audioTrack : FirstOrNew<AudioTrack>()
+            : track as VideoTrack is { Locked: false } videoTrack ? videoTrack : FirstOrNew<VideoTrack>();
         Track? linked = asset.Kind == MediaKind.Video && asset.HasAudio ? FirstOrNew<AudioTrack>() : null;
         var duration = asset.Kind == MediaKind.Image ? DefaultStillDuration : asset.Duration;
 
@@ -128,7 +128,9 @@ public sealed class Sequence
         return [clip, sound];
     }
 
-    private T FirstOrNew<T>() where T : Track, new() => Tracks.OfType<T>().FirstOrDefault() ?? AddTrack<T>();
+    /// <summary>그 종류의 잠기지 않은 첫 트랙. 없으면 새로 만든다.</summary>
+    private T FirstOrNew<T>() where T : Track, new() =>
+        Tracks.OfType<T>().FirstOrDefault(track => !track.Locked) ?? AddTrack<T>();
 
     private static bool IsFree(Track track, TimeRange range) => !track.Clips.Any(clip => clip.Range.Overlaps(range));
 

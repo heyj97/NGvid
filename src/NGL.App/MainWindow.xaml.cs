@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         _viewModel.RenderRequested += () => Dispatcher.BeginInvoke(Preview.InvalidateVisual);
         // 화면을 그릴 때마다 재생 위치 표시(슬라이더·타임코드)를 갱신한다.
         CompositionTarget.Rendering += OnRendering;
+        Timeline.MarkerRenameRequested += OnMarkerRename;
         Closed += (_, _) =>
         {
             CompositionTarget.Rendering -= OnRendering;
@@ -39,7 +40,78 @@ public partial class MainWindow : Window
         if (args.Length > 1) _viewModel.OpenProject(args[1]);
     }
 
-    private void OnRendering(object? sender, EventArgs e) => _viewModel.Tick();
+    private bool _updatingScroll;
+
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        _viewModel.Tick();
+        Timeline.Refresh();
+
+        // 가로 스크롤 막대를 타임라인의 보이는 구간에 맞춘다. 끝에 화면 절반만큼 여유를 둔다.
+        var viewport = Timeline.ViewportSeconds;
+        var duration = _viewModel.Project?.Sequence.Duration.TotalSeconds ?? 0;
+        _updatingScroll = true;
+        TimelineScroll.Maximum = Math.Max(_viewModel.TimelineOffset, duration - viewport / 2);
+        TimelineScroll.ViewportSize = viewport;
+        TimelineScroll.LargeChange = viewport;
+        TimelineScroll.SmallChange = viewport / 10;
+        TimelineScroll.Value = _viewModel.TimelineOffset;
+        _updatingScroll = false;
+    }
+
+    private void OnTimelineScroll(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_updatingScroll) _viewModel.TimelineOffset = e.NewValue;
+    }
+
+    // ───── 타임라인 ─────
+
+    private void OnAddTrackClick(object sender, RoutedEventArgs e)
+    {
+        var menu = ((Button)sender).ContextMenu!;
+        menu.DataContext = _viewModel;
+        menu.PlacementTarget = (Button)sender;
+        menu.IsOpen = true;
+    }
+
+    private static TrackItem? TrackOf(object sender) => ((FrameworkElement)sender).DataContext as TrackItem;
+
+    private void OnTrackUpClick(object sender, RoutedEventArgs e)
+    {
+        if (TrackOf(sender) is { } item) _viewModel.MoveTrack(item.Track, -1);
+    }
+
+    private void OnTrackDownClick(object sender, RoutedEventArgs e)
+    {
+        if (TrackOf(sender) is { } item) _viewModel.MoveTrack(item.Track, 1);
+    }
+
+    private void OnTrackColorClick(object sender, RoutedEventArgs e)
+    {
+        if (TrackOf(sender) is { } item && e.OriginalSource is MenuItem { DataContext: string color }) item.SetColor(color);
+    }
+
+    /// <summary>클립이 있는 트랙은 되돌릴 수 없으므로 먼저 묻는다.</summary>
+    private void OnTrackDeleteClick(object sender, RoutedEventArgs e)
+    {
+        if (TrackOf(sender) is not { } item) return;
+        if (item.Track.Clips.Count > 0 && MessageBox.Show(this,
+                $"'{item.Name}' 트랙과 그 안의 클립 {item.Track.Clips.Count}개를 삭제할까요?", "트랙 삭제",
+                MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        _viewModel.DeleteTrack(item.Track);
+    }
+
+    private void OnMarkerRename(Marker marker)
+    {
+        if (PromptWindow.Ask(this, "마커 이름", marker.Name) is { } name) _viewModel.RenameMarker(marker, name);
+    }
+
+    /// <summary>보관함의 썸네일을 끌기 시작하면 타임라인에 놓을 수 있다.</summary>
+    private void OnAssetMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && ((FrameworkElement)sender).DataContext is AssetItem item)
+            DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(typeof(AssetItem), item), DragDropEffects.Copy);
+    }
 
     // ───── 메뉴 ─────
 
@@ -129,6 +201,7 @@ public partial class MainWindow : Window
             case Key.I: _viewModel.SetLoopStartCommand.Execute(null); break;
             case Key.O: _viewModel.SetLoopEndCommand.Execute(null); break;
             case Key.L: _viewModel.ToggleLoopCommand.Execute(null); break;
+            case Key.M: _viewModel.AddMarkerCommand.Execute(null); break;
             default: return;
         }
 

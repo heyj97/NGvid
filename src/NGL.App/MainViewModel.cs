@@ -92,6 +92,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Project = project;
         StatusText = "";
 
+        _waveforms.Clear();
         _allAssets.Clear();
         foreach (var asset in project.Assets) _allAssets.Add(NewItem(asset));
 
@@ -101,6 +102,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         RebuildEngine();
         RefreshLibrary();
+        RefreshTracks();
+        TimelineOffset = 0;
     }
 
     [RelayCommand]
@@ -154,7 +157,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             // 썸네일은 디코딩이 필요하므로 뒤에서 만든다.
             Task.Run(() => ThumbnailService.Create(path, asset.Kind, asset.Duration))
-                .ContinueWith(task => item.SetThumbnail(task.Result), TaskScheduler.FromCurrentSynchronizationContext());
+                .ContinueWith(task =>
+                {
+                    item.SetThumbnail(task.Result);
+                    TimelineVersion++; // 클립 앞머리의 썸네일을 다시 그린다
+                }, TaskScheduler.FromCurrentSynchronizationContext());
+            LoadWaveform(asset, path);
         }
 
         return item;
@@ -204,10 +212,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void AddToTimeline(AssetItem item)
     {
-        if (Project is null || _engine is null) return;
-        _engine.Edit(() => Project.Sequence.AddToEnd(item.Asset));
-        SequenceChanged();
-        Save();
+        if (Project is not { } project) return;
+        Edit(() => project.Sequence.AddToEnd(item.Asset));
+        RefreshTracks();
     }
 
     /// <summary>사라진 원본 하나를 고른 파일로 다시 연결한다.</summary>
