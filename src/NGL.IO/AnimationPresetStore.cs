@@ -1,4 +1,3 @@
-using System.Text.Json;
 using NGL.Core;
 
 namespace NGL.IO;
@@ -31,19 +30,7 @@ public static class AnimationPresetStore
     ];
 
     /// <summary>파일이 없거나 읽을 수 없으면 기본 프리셋을 돌려준다.</summary>
-    public static List<AnimationPreset> Load(string? path = null)
-    {
-        try
-        {
-            var json = File.ReadAllText(path ?? DefaultPath);
-            return JsonSerializer.Deserialize<List<AnimationPreset>>(json, NgvidJson.Options) ?? Defaults();
-        }
-        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
-        {
-            return Defaults();
-        }
-    }
+    public static List<AnimationPreset> Load(string? path = null) => PresetFile.Load(path ?? DefaultPath, Defaults);
 
-    public static void Save(List<AnimationPreset> presets, string? path = null) =>
-        NgvidJson.WriteFileSafely(path ?? DefaultPath, JsonSerializer.Serialize(presets, NgvidJson.Options));
+    public static void Save(List<AnimationPreset> presets, string? path = null) => PresetFile.Save(path ?? DefaultPath, presets);
 }

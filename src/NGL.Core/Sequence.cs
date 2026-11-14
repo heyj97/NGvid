@@ -134,6 +134,47 @@ public sealed class Sequence
     }
 
     /// <summary>그 종류의 잠기지 않은 첫 트랙. 없으면 새로 만든다.</summary>
+    // ───── 텍스트와 자막 ─────
+
+    /// <summary>텍스트 클립을 처음 놓을 때의 길이.</summary>
+    public static readonly TimeSpan DefaultTextDuration = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// 텍스트 클립을 time에 놓는다. 그 자리가 빈 영상 트랙(잠기지 않은 것 중 위쪽부터)에 놓고,
+    /// 없으면 맨 위에 새 영상 트랙을 만든다. 텍스트는 영상 위에 보여야 하기 때문이다.
+    /// </summary>
+    public TextClip AddText(TimeSpan time, string text)
+    {
+        var clip = new TextClip
+        {
+            Text = text,
+            Range = new TimeRange(SnapToFrame(time < TimeSpan.Zero ? TimeSpan.Zero : time), DefaultTextDuration),
+        };
+        var track = Tracks.OfType<VideoTrack>().FirstOrDefault(each => !each.Locked && IsFree(each, clip.Range)) ?? AddTrack<VideoTrack>();
+        track.Clips.Add(clip);
+        track.Clips.SortByStart();
+        return clip;
+    }
+
+    /// <summary>
+    /// 자막을 놓는다. track이 null이면 잠기지 않은 첫 자막 트랙(없으면 새로)에 놓는다.
+    /// 스타일은 그 트랙의 첫 자막을 따르고, 첫 자막이면 화면 아래쪽 기본 위치에 놓는다.
+    /// 그 자리에 다른 자막이 있으면 놓지 않고 null을 돌려준다.
+    /// </summary>
+    public CaptionClip? AddCaption(CaptionTrack? track, TimeRange range, string text)
+    {
+        track ??= FirstOrNew<CaptionTrack>();
+        range = new TimeRange(SnapToFrame(range.Start < TimeSpan.Zero ? TimeSpan.Zero : range.Start), range.Duration);
+        if (range.Duration <= TimeSpan.Zero || !IsFree(track, range)) return null;
+
+        var style = track.Clips.OfType<CaptionClip>().FirstOrDefault()?.Style.Clone()
+            ?? new TextStyle { Size = 64, Y = Preset.Height * 0.36 };
+        var clip = new CaptionClip { Text = text, Range = range, Style = style };
+        track.Clips.Add(clip);
+        track.Clips.SortByStart();
+        return clip;
+    }
+
     private T FirstOrNew<T>() where T : Track, new() =>
         Tracks.OfType<T>().FirstOrDefault(track => !track.Locked) ?? AddTrack<T>();
 

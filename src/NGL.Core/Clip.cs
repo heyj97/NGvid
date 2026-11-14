@@ -152,14 +152,72 @@ public sealed class AudioClip : MediaClip
 
 public sealed class ImageClip : VisualClip;
 
-/// <summary>제목·설명 같은 자유 텍스트. 영상 트랙에 올린다.</summary>
-public sealed class TextClip : Clip
+/// <summary>글자의 모양과 위치. 텍스트 클립과 자막이 함께 쓴다.</summary>
+public sealed class TextStyle
 {
-    public string Text { get; set; } = "";
+    public string Font { get; set; } = "Malgun Gothic";
+
+    /// <summary>글자 크기(시퀀스 픽셀).</summary>
+    public double Size { get; set; } = 72;
+
+    public bool Bold { get; set; } = true;
+
+    /// <summary>글자 색. #RRGGBB 또는 #AARRGGBB.</summary>
+    public string Color { get; set; } = "#FFFFFF";
+
+    public string OutlineColor { get; set; } = "#000000";
+
+    /// <summary>외곽선 두께(픽셀). 0이면 없다.</summary>
+    public double OutlineWidth { get; set; } = 6;
+
+    public string ShadowColor { get; set; } = "#000000";
+
+    /// <summary>그림자를 오른쪽 아래로 옮기는 거리(픽셀). 0이면 없다.</summary>
+    public double ShadowOffset { get; set; }
+
+    /// <summary>글자 뒤에 까는 배경 박스의 색. null이면 없다.</summary>
+    public string? BoxColor { get; set; }
+
+    /// <summary>화면 가운데에서 오른쪽으로 옮긴 거리(픽셀).</summary>
+    public double X { get; set; }
+
+    /// <summary>화면 가운데에서 아래로 옮긴 거리(픽셀).</summary>
+    public double Y { get; set; }
+
+    /// <summary>말하는 단어를 강조하는 색. null이면 강조하지 않는다. 단어별 시간은 글자 수 비율로 나눈다.</summary>
+    public string? HighlightColor { get; set; }
+
+    public TextStyle Clone() => (TextStyle)MemberwiseClone();
 }
 
-/// <summary>자막 트랙에 올리는 자막 한 줄.</summary>
-public sealed class CaptionClip : Clip
+/// <summary>이름을 붙여 저장해 둔 글자 스타일.</summary>
+public sealed record TextStylePreset(string Name, TextStyle Style)
 {
-    public string Text { get; set; } = "";
+    /// <summary>처음 쓸 때 들어 있는 프리셋.</summary>
+    public static List<TextStylePreset> Defaults() =>
+    [
+        new("기본", new TextStyle()),
+        new("팝업", new TextStyle { Size = 88, Color = "#FFE14D", OutlineWidth = 10 }),
+        new("박스", new TextStyle { OutlineWidth = 0, BoxColor = "#CC000000" }),
+    ];
 }
+
+/// <summary>글자를 그리는 클립.</summary>
+public abstract class TextualClip : Clip
+{
+    private TextStyle _style = new();
+
+    public string Text { get; set; } = "";
+
+    public TextStyle Style
+    {
+        get => _style;
+        set => _style = value ?? throw new ArgumentNullException(nameof(value));
+    }
+}
+
+/// <summary>제목·설명 같은 자유 텍스트. 영상 트랙에 올린다.</summary>
+public sealed class TextClip : TextualClip;
+
+/// <summary>자막 트랙에 올리는 자막 한 줄.</summary>
+public sealed class CaptionClip : TextualClip;
