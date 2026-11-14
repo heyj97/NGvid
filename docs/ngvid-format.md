@@ -7,7 +7,8 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
   project.ngvid     ← 편집 정보 (JSON, UTF-8)
   media/            ← 가져온 원본. 원래 파일명 그대로
   luts/             ← 가져온 LUT(.cube) 파일
-  proxy/            ← 프록시 사본. 지워도 다시 만들 수 있음
+  proxy/            ← 프록시 사본(`원본ID.mp4`). 지워도 다시 만들 수 있음
+  backups/          ← 자동 백업(`project-날짜-시각.ngvid`). 지워도 됨
 ```
 
 저장·읽기 코드는 `src/NGL.IO/ProjectSerializer.cs`, 데이터 모델은 `src/NGL.Core`에 있다.

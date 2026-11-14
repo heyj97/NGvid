@@ -114,7 +114,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _history.Clear();
         RefreshPresets();
         RefreshStylePresets();
-        _history.Limit = NGL.IO.AppSettingsStore.Load().UndoLimit;
+        _history.Limit = _settings.UndoLimit;
+        Backup(); // 이번에 고치기 전의 상태를 남겨 둔다
         _selection.Clear();
         _clipboard = [];
         SyncTracks();
@@ -147,7 +148,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _engine?.Dispose();
         _engine = new PlaybackEngine(project.Sequence,
             id => project.FindAsset(id) is { } asset ? ProjectPaths.AssetFile(folder, asset) : null, _output,
-            CubeLutParser.LoaderFor(folder));
+            CubeLutParser.LoaderFor(folder),
+            id => project.FindAsset(id) is { } asset ? VideoFile(folder, asset) : null);
         _engine.Quality = Quality;
         _engine.FrameReady += () => RenderRequested?.Invoke();
         _engine.Seek(position);
@@ -242,6 +244,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             MediaRelinker.Relink(_folder, item.Asset, newPath);
+            File.Delete(ProjectPaths.ProxyFile(_folder, item.Asset)); // 다른 파일일 수 있으니 예전 프록시는 버린다
             AfterRelink();
         }
         catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
@@ -333,6 +336,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public void Tick()
     {
         if (_engine is null || Project is null) return;
+        BackupIfDue();
 
         var position = _engine.Position;
         _followingEngine = true;
@@ -364,6 +368,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _proxyRun?.Cancel();
         _engine?.Dispose();
         _output.Dispose();
     }

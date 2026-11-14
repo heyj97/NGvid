@@ -184,6 +184,22 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) _viewModel.Relink(item, dialog.FileName);
     }
 
+    private async void OnBuildProxyClick(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).DataContext is AssetItem item) await _viewModel.BuildProxy(item);
+    }
+
+    private void OnSettingsClick(object sender, RoutedEventArgs e)
+    {
+        if (SettingsWindow.Ask(this, _viewModel.Settings) is { } settings) _viewModel.ApplySettings(settings);
+    }
+
+    private void OnRestoreClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.Pause();
+        if (SettingsWindow.AskBackup(this, _viewModel.Backups()) is { } backup) _viewModel.RestoreBackup(backup);
+    }
+
     private void OnRelinkFolderClick(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog { Title = "사라진 원본이 있는 폴더" };

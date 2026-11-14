@@ -51,11 +51,13 @@ public sealed class PlaybackEngine : IDisposable
     public event Action? Ended;
 
     /// <param name="lutOf">클립에 적힌 LUT 경로로 색 변환표를 찾아 준다. 없으면 LUT는 적용하지 않는다.</param>
-    public PlaybackEngine(Sequence sequence, Func<Guid, string?> pathOfAsset, IAudioOutput output, Func<string, CubeLut?>? lutOf = null)
+    /// <param name="videoPathOfAsset">화면을 읽을 파일(프록시 등). 없으면 소리와 같은 파일에서 읽는다.</param>
+    public PlaybackEngine(Sequence sequence, Func<Guid, string?> pathOfAsset, IAudioOutput output, Func<string, CubeLut?>? lutOf = null,
+        Func<Guid, string?>? videoPathOfAsset = null)
     {
         _sequence = sequence;
         _compositor = new SkiaCompositor(lutOf);
-        _video = new VideoFrameSource(pathOfAsset);
+        _video = new VideoFrameSource(videoPathOfAsset ?? pathOfAsset);
         _audio = new SequenceAudioReader(sequence, pathOfAsset, _sequenceGate);
         _output = output;
         _clock = new MasterClock(output);

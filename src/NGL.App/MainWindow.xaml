@@ -81,7 +81,7 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Left" Text="NGvid" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <Menu DockPanel.Dock="Left" Background="Transparent" Foreground="#C9CCD1" VerticalAlignment="Center" Focusable="False">
-                    <MenuItem Header="파일" Padding="10,6">
+                    <MenuItem x:Name="FileMenu" Header="파일" Padding="10,6">
                         <MenuItem Header="새 프로젝트" InputGestureText="Ctrl+N" Click="OnNewClick" Foreground="Black" />
                         <MenuItem Header="열기" InputGestureText="Ctrl+O" Click="OnOpenClick" Foreground="Black" />
                         <MenuItem Header="저장" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" Foreground="Black" />
@@ -90,6 +90,10 @@
                                   IsEnabled="{Binding HasProject}" />
                         <MenuItem x:Name="ExportItem" Header="내보내기" InputGestureText="Ctrl+E" Click="OnExportClick" Foreground="Black"
                                   IsEnabled="{Binding HasProject}" />
+                        <Separator />
+                        <MenuItem x:Name="RestoreItem" Header="백업에서 복구…" Click="OnRestoreClick" Foreground="Black"
+                                  IsEnabled="{Binding HasProject}" />
+                        <MenuItem x:Name="SettingsItem" Header="설정…" Click="OnSettingsClick" Foreground="Black" />
                     </MenuItem>
                     <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,6" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" Foreground="Black" />
@@ -204,6 +208,8 @@
                                         <ContextMenu>
                                             <MenuItem Header="타임라인에 추가" Click="OnAddToTimelineClick" />
                                             <MenuItem Header="다시 연결…" Click="OnRelinkClick" />
+                                            <MenuItem Header="프록시 만들기" Click="OnBuildProxyClick"
+                                                      ToolTip="미리보기용 작은 사본을 만듭니다(영상만). 내보내기는 언제나 원본을 씁니다." />
                                         </ContextMenu>
                                     </StackPanel.ContextMenu>
                                     <Border Height="74" CornerRadius="6" Background="#1F2126" BorderBrush="#2A2D33" BorderThickness="1" ClipToBounds="True"
