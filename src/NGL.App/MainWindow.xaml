@@ -178,11 +178,25 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid DockPanel.Dock="Bottom" Margin="12,0,12,12">
-                        <Rectangle Stroke="#3A3E46" StrokeDashArray="4 3" RadiusX="8" RadiusY="8" />
-                        <TextBlock Text="파일을 여기로 끌어 놓으세요" Foreground="{StaticResource Muted}" FontSize="12"
-                                   HorizontalAlignment="Center" Margin="0,16" />
-                    </Grid>
+                    <!-- 끌어 놓을 곳을 알려 주고, 누르면 파일을 고르는 창을 연다. -->
+                    <Button x:Name="DropHintButton" DockPanel.Dock="Bottom" Margin="12,0,12,12" Click="OnImportClick" Cursor="Hand" Focusable="False"
+                            ToolTip="눌러서 파일을 고를 수도 있습니다 (Ctrl+I)">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Grid Background="Transparent">
+                                    <Rectangle x:Name="Edge" Stroke="#3A3E46" StrokeDashArray="4 3" RadiusX="8" RadiusY="8" />
+                                    <TextBlock x:Name="Hint" Text="파일을 여기로 끌어 놓으세요" Foreground="{StaticResource Muted}" FontSize="12"
+                                               HorizontalAlignment="Center" Margin="0,16" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Edge" Property="Stroke" Value="{StaticResource Accent}" />
+                                        <Setter TargetName="Hint" Property="Foreground" Value="{StaticResource Text}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
 
                     <ListBox x:Name="AssetList" ItemsSource="{Binding VisibleAssets}" Background="Transparent" BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="6,0" Focusable="False">
@@ -764,7 +778,7 @@
                 <!-- 처음 높이는 눈금 + 트랙 4개다(TimelineRow). 트랙이 더 많으면 세로로 스크롤한다. -->
                 <!-- shortcut: 세로로 스크롤하면 시간 눈금도 함께 올라간다. 불편하면 눈금을 따로 고정한다. -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-                    <Grid>
+                    <Grid MinHeight="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180" />
                             <ColumnDefinition Width="*" />
@@ -820,7 +834,7 @@
                             </ItemsControl>
                         </StackPanel>
 
-                        <local:TimelineView Grid.Column="1" x:Name="Timeline" VerticalAlignment="Top" />
+                        <local:TimelineView Grid.Column="1" x:Name="Timeline" />
                     </Grid>
                 </ScrollViewer>
             </DockPanel>
