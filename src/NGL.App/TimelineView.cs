@@ -474,14 +474,42 @@ public sealed class TimelineView : FrameworkElement
 
     protected override void OnMouseRightButtonUp(MouseButtonEventArgs e)
     {
-        if (Model is not { } model || MarkerAt(e.GetPosition(this)) is not { } marker) return;
-
-        var rename = new MenuItem { Header = "이름 바꾸기" };
-        rename.Click += (_, _) => MarkerRenameRequested?.Invoke(marker);
-        var delete = new MenuItem { Header = "마커 삭제" };
-        delete.Click += (_, _) => model.DeleteMarker(marker);
-        new ContextMenu { Items = { rename, delete }, PlacementTarget = this, IsOpen = true };
+        if (Model is not { } model) return;
+        var point = e.GetPosition(this);
         e.Handled = true;
+
+        if (MarkerAt(point) is { } marker)
+        {
+            Open([new("이름 바꾸기", () => MarkerRenameRequested?.Invoke(marker)), new("마커 삭제", () => model.DeleteMarker(marker))]);
+        }
+        else if (ClipAt(point) is { } clip)
+        {
+            // 선택하지 않은 클립을 누르면 그 클립을 선택한다. 선택한 것 중 하나를 누르면 선택을 그대로 둔다.
+            if (!model.IsSelected(clip)) model.Select(clip);
+            Open(model.ClipMenu());
+        }
+        else if (point.Y > RulerHeight)
+        {
+            Open(model.EmptyMenu());
+        }
+    }
+
+    private void Open(List<MenuEntry> entries)
+    {
+        var menu = new ContextMenu { PlacementTarget = this };
+        foreach (var entry in entries) menu.Items.Add(ItemOf(entry));
+        menu.IsOpen = true;
+    }
+
+    /// <param name="choice">여럿 중 하나를 고르는 항목인가. 체크 표시 자리를 비워 두어 줄이 맞게 한다.</param>
+    private static object ItemOf(MenuEntry entry, bool choice = false)
+    {
+        if (entry.Header.Length == 0) return new Separator();
+
+        var item = new MenuItem { Header = entry.Header, InputGestureText = entry.Gesture, IsCheckable = choice, IsChecked = entry.Checked };
+        if (entry.Run is { } run) item.Click += (_, _) => run();
+        foreach (var child in entry.Children ?? []) item.Items.Add(ItemOf(child, choice: true));
+        return item;
     }
 
     /// <summary>Ctrl+휠은 마우스 위치를 기준으로 확대·축소, 휠만 굴리면 좌우로 움직인다.</summary>
