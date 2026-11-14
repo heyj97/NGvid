@@ -33,7 +33,7 @@ public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposa
     /// 돌려준 이미지는 받은 쪽이 해제한다.
     /// </summary>
     public SKImage? GetImage(VideoClip clip, TimeSpan timelineTime) =>
-        GetImage(clip.AssetId, clip.SourceStart + (timelineTime - clip.Range.Start));
+        GetImage(clip.AssetId, clip.SourceStart + clip.SourceOffsetAt(timelineTime - clip.Range.Start));
 
     /// <summary>이미지 클립의 그림. 돌려준 이미지는 받은 쪽이 해제한다.</summary>
     public SKImage? GetImage(ImageClip clip) => GetImage(clip.AssetId, TimeSpan.Zero);

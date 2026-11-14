@@ -70,6 +70,8 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 크로마키는 `effects`의 `keyColor`(없으면 적지 않음), `keyTolerance`, `keySoftness`(0~1)이고,
 마스크는 `mask`: `shape`(`None`·`Rectangle`·`Ellipse`·`Polygon`), `x`·`y`·`width`·`height`(클립 그림에 대한 비율), `feather`(픽셀), `inverted`,
 `points`(자유 도형의 점 `x`·`y` 목록)이다. 키프레임 속성에는 `MaskX`·`MaskY`·`MaskWidth`·`MaskHeight`도 쓸 수 있다.
+영상·오디오 클립에는 재생 속도 `speed`(0.25~4, 없으면 1)가 있다. 클립의 `elapsed` 시점에 보이는 원본 위치는
+`sourceStart + elapsed × speed`이고, 키프레임 속성 `Speed`가 있으면 `speed` 대신 그 값을 0부터 `elapsed`까지 쌓은 만큼이다.
 원본(`assets`)에는 화면에 보이는 크기 `width`·`height`가 기록된다.
 
 글자 스타일(`style`): `font`, `size`(픽셀), `bold`, `color`, `outlineColor`, `outlineWidth`, `shadowColor`, `shadowOffset`,

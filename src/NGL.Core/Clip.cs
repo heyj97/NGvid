@@ -65,6 +65,24 @@ public abstract class MediaClip : Clip
 
     /// <summary>원본에서 재생을 시작하는 위치(앞쪽 트리밍). 이미지는 쓰지 않는다.</summary>
     public TimeSpan SourceStart { get; set; }
+
+    public const double MinSpeed = 0.25;
+    public const double MaxSpeed = 4;
+
+    private double _speed = 1;
+
+    /// <summary>재생 속도. 1이 원래 속도이고 0.25~4배까지. 속도 키프레임이 있으면 그쪽을 따른다.</summary>
+    public double Speed
+    {
+        get => _speed;
+        set => _speed = Math.Clamp(value, MinSpeed, MaxSpeed);
+    }
+
+    /// <summary>클립이 시작하고 elapsed가 지나는 동안 원본이 흐른 시간.</summary>
+    public TimeSpan SourceOffsetAt(TimeSpan elapsed) =>
+        Keyframes.TryGetValue(AnimatedProperty.Speed, out var keys) && keys.Count > 0
+            ? TimeSpan.FromSeconds(Animation.Integrate(keys, elapsed))
+            : elapsed * Speed;
 }
 
 /// <summary>겹치는 아래 화면과 색을 섞는 방식.</summary>

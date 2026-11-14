@@ -118,6 +118,8 @@
                         <MenuItem x:Name="UngroupItem" Header="그룹 해제" InputGestureText="Ctrl+Shift+G" Command="{Binding UngroupCommand}" Foreground="Black" />
                         <MenuItem x:Name="LinkItem" Header="영상·오디오 연결" Command="{Binding LinkCommand}" Foreground="Black" />
                         <MenuItem x:Name="UnlinkItem" Header="영상·오디오 분리" Command="{Binding UnlinkCommand}" Foreground="Black" />
+                        <Separator />
+                        <MenuItem x:Name="FreezeFrameItem" Header="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" Foreground="Black" />
                     </MenuItem>
                 </Menu>
 
@@ -469,6 +471,20 @@
                         <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 자막에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
                                 Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}"
                                 ToolTip="문구와 시간은 그대로 두고 스타일만 복사합니다" />
+                    </StackPanel>
+
+                    <!-- 속도 -->
+                    <StackPanel x:Name="SpeedInspector" Margin="0,0,0,16" Visibility="{Binding HasSpeedSelection, Converter={StaticResource Visible}}">
+                        <TextBlock Text="속도" FontWeight="Medium" Margin="0,0,0,12" />
+                        <DockPanel>
+                            <Button x:Name="SpeedKeyButton" DockPanel.Dock="Right" Content="{Binding SpeedKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Speed"
+                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 속도 키프레임 찍기·지우기. 키프레임 사이에서 속도가 서서히 변합니다(속도 램프)." />
+                            <TextBox x:Name="SpeedBox" DockPanel.Dock="Right" Text="{Binding SpeedPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="속도 (%)" Style="{StaticResource Label}"
+                                       ToolTip="25~400. 클립의 길이가 속도에 맞게 바뀝니다(뒤 클립이 있으면 그 앞까지만). 소리의 음높이는 유지됩니다." />
+                        </DockPanel>
+                        <Button x:Name="FreezeFrameButton" Content="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" Margin="0"
+                                ToolTip="재생 위치의 화면을 이미지로 저장하고 그 자리에 2초짜리 정지 화면을 끼워 넣습니다" />
                     </StackPanel>
 
                     <!-- 오디오 클립과 그 트랙 -->

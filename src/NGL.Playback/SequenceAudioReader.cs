@@ -17,6 +17,12 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
     {
         public IAudioDecoder? Decoder;   // 열 수 없는 원본이면 null
         public long NextSourceFrame = -1; // 디코더가 다음에 내놓을 원본 위치
+        public double Speed = 1;          // 디코더가 내놓는 소리의 배속
+
+        // 속도 램프용: 원본의 WindowStart부터 WindowCount 프레임을 읽어 둔 것
+        public float[] Window = [];
+        public long WindowStart;
+        public int WindowCount;
     }
 
     private readonly object _gate = new();
@@ -66,7 +72,7 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
                     if (from >= to) continue;
 
                     var target = buffer.Slice((int)(from - start) * Channels, (int)(to - from) * Channels);
-                    Mix((AudioTrack)track, audio, ToFrames(audio.SourceStart) + (from - clipStart), from, target);
+                    Mix((AudioTrack)track, audio, clipStart, from, target);
                 }
             }
 
@@ -79,26 +85,27 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
     }
 
     /// <summary>
-    /// 클립의 원본 sourceFrame 위치부터의 소리에 볼륨·페이드·자동 감쇠를 곱해 target에 더한다.
-    /// timelineFrame은 target의 첫 샘플이 놓이는 타임라인 위치다.
+    /// 클립의 소리에 속도·볼륨·페이드·자동 감쇠를 적용해 target에 더한다.
+    /// timelineFrame은 target의 첫 샘플이 놓이는 타임라인 위치, clipStart는 클립이 시작하는 위치다.
     /// </summary>
-    private void Mix(AudioTrack track, AudioClip clip, long sourceFrame, long timelineFrame, Span<float> target)
+    private void Mix(AudioTrack track, AudioClip clip, long clipStart, long timelineFrame, Span<float> target)
     {
-        if (!_entries.TryGetValue(clip.Id, out var entry))
+        // 일정한 배속은 음높이를 지키는 디코더로, 속도 램프는 원래 디코더의 소리를 직접 늘이고 줄여서 만든다.
+        var ramp = clip.Keyframes.ContainsKey(AnimatedProperty.Speed);
+        var speed = ramp ? 1 : clip.Speed;
+        if (!_entries.TryGetValue(clip.Id, out var entry) || entry.Speed != speed)
         {
-            entry = new Entry { Decoder = Open(clip.AssetId) };
-            _entries.Add(clip.Id, entry);
+            entry?.Decoder?.Dispose();
+            _entries[clip.Id] = entry = new Entry { Decoder = Open(clip.AssetId, speed), Speed = speed };
         }
 
         if (entry.Decoder is null) return;
 
-        // 이어서 읽는 경우가 아니면(처음, 탐색, 클립이 옮겨짐) 원본 위치를 다시 맞춘다.
-        if (entry.NextSourceFrame != sourceFrame) entry.Decoder.Seek(sourceFrame);
-
         if (_scratch.Length < target.Length) _scratch = new float[target.Length];
         var samples = _scratch.AsSpan(0, target.Length);
-        var read = entry.Decoder.Read(samples);
-        entry.NextSourceFrame = sourceFrame + read;
+        var read = ramp
+            ? ReadRamp(entry, clip, clipStart, timelineFrame, samples)
+            : ReadAt(entry, ToFrames(clip.SourceStart / speed) + (timelineFrame - clipStart), samples);
 
         // 크기는 1/100초마다 다시 계산하고 그 사이는 고르게 잇는다.
         const int step = Rate / 100;
@@ -113,11 +120,63 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
         for (var i = 0; i < read * Channels; i++) target[i] += samples[i];
     }
 
-    private IAudioDecoder? Open(Guid assetId)
+    /// <summary>디코더의 sourceFrame 위치부터 읽는다. 이어서 읽는 경우가 아니면(처음, 탐색, 클립이 옮겨짐) 위치를 다시 맞춘다.</summary>
+    private static int ReadAt(Entry entry, long sourceFrame, Span<float> samples)
+    {
+        if (entry.NextSourceFrame != sourceFrame) entry.Decoder!.Seek(sourceFrame);
+        var read = entry.Decoder!.Read(samples);
+        entry.NextSourceFrame = sourceFrame + read;
+        return read;
+    }
+
+    /// <summary>속도가 변하는 클립: 이 구간에 해당하는 원본 소리를 읽어 구간 길이에 맞게 늘이거나 줄인다.</summary>
+    // shortcut: 음높이가 속도를 따라 변하고, 한 번에 읽는 구간 안에서는 속도가 일정하다고 본다. 거슬리면 atempo의 속도를 구간마다 바꾸는 방식으로 간다.
+    private static int ReadRamp(Entry entry, AudioClip clip, long clipStart, long timelineFrame, Span<float> samples)
+    {
+        var frames = samples.Length / Channels;
+        double SourceAt(long frame) => (clip.SourceStart + clip.SourceOffsetAt(ToTime(frame - clipStart))).TotalSeconds * Rate;
+        var (from, to) = (SourceAt(timelineFrame), SourceAt(timelineFrame + frames));
+        var first = (long)Math.Floor(from);
+        var needed = (int)((long)Math.Ceiling(to) - first) + 2;
+
+        // 앞 구간에서 읽어 둔 것 중 이번 구간과 겹치는 뒷부분은 다시 쓴다.
+        var keep = first >= entry.WindowStart && first <= entry.WindowStart + entry.WindowCount
+            ? (int)(entry.WindowStart + entry.WindowCount - first)
+            : 0;
+        var count = Math.Max(keep, needed);
+        if (entry.Window.Length < count * Channels) Array.Resize(ref entry.Window, count * Channels);
+        var window = entry.Window;
+        if (keep > 0) window.AsSpan((int)(first - entry.WindowStart) * Channels, keep * Channels).CopyTo(window);
+        if (keep < needed)
+        {
+            var fresh = window.AsSpan(keep * Channels, (needed - keep) * Channels);
+            fresh[(ReadAt(entry, first + keep, fresh) * Channels)..].Clear(); // 원본이 끝난 뒤는 무음
+        }
+
+        (entry.WindowStart, entry.WindowCount) = (first, count);
+
+        for (var i = 0; i < frames; i++)
+        {
+            var position = from + (to - from) * i / frames - first;
+            var index = (int)position;
+            var weight = (float)(position - index);
+            for (var channel = 0; channel < Channels; channel++)
+            {
+                samples[i * Channels + channel] = window[index * Channels + channel] * (1 - weight)
+                    + window[(index + 1) * Channels + channel] * weight;
+            }
+        }
+
+        return frames;
+    }
+
+    private IAudioDecoder? Open(Guid assetId, double speed)
     {
         try
         {
-            return pathOfAsset(assetId) is { } path ? new FFmpegAudioDecoder(path) : null;
+            if (pathOfAsset(assetId) is not { } path) return null;
+            var decoder = new FFmpegAudioDecoder(path);
+            return speed == 1 ? decoder : new TempoAudioDecoder(decoder, speed);
         }
         catch (InvalidDataException)
         {

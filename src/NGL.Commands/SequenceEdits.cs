@@ -54,7 +54,7 @@ public static class SequenceEdits
             var head = time - clip.Range.Start;
             var tail = SequenceSnapshot.Clone(clip);
             tail.Range = new TimeRange(time, clip.Range.End - time);
-            if (tail is MediaClip media) media.SourceStart += head;
+            if (tail is MediaClip media) media.SourceStart += media.SourceOffsetAt(head);
             tail.ShiftKeyframes(-head); // 뒤 조각의 움직임이 자르기 전과 똑같이 이어지게
             if (clip.LinkId is { } link)
             {
@@ -199,7 +199,8 @@ public static class SequenceEdits
             var previousEnd = sequence.TrackOf(each)!.Clips.Where(other => other.Range.End <= each.Range.Start)
                 .Select(other => other.Range.End).DefaultIfEmpty(TimeSpan.Zero).Max();
             var earliest = previousEnd - each.Range.Start;
-            if (HasSourceTime(each)) earliest = Max(earliest, -((MediaClip)each).SourceStart);
+            // shortcut: 속도 램프가 있으면 클립 시작의 속도로 어림한다. 어긋난 만큼은 아래에서 원본의 처음에 맞춘다.
+            if (HasSourceTime(each)) earliest = Max(earliest, -(((MediaClip)each).SourceStart / SpeedAt(each, TimeSpan.Zero)));
 
             delta = Max(delta, earliest);
             delta = Min(delta, each.Range.Duration - frame);
@@ -209,8 +210,9 @@ public static class SequenceEdits
         foreach (var each in clips)
         {
             each.Range = new TimeRange(each.Range.Start + delta, each.Range.Duration - delta);
+            if (HasSourceTime(each) && each is MediaClip media)
+                media.SourceStart = Max(TimeSpan.Zero, media.SourceStart + media.SourceOffsetAt(delta));
             each.ShiftKeyframes(-delta); // 움직임은 화면 내용에 붙어 있게
-            if (HasSourceTime(each)) ((MediaClip)each).SourceStart += delta;
         }
 
         return true;
@@ -233,8 +235,12 @@ public static class SequenceEdits
             var nextStart = sequence.TrackOf(each)!.Clips.Where(other => other.Range.Start >= each.Range.End)
                 .Select(other => other.Range.Start).DefaultIfEmpty(TimeSpan.MaxValue).Min();
             var latest = nextStart - each.Range.End;
-            if (HasSourceTime(each) && project.FindAsset(((MediaClip)each).AssetId) is { Duration.Ticks: > 0 } asset)
-                latest = Min(latest, asset.Duration - ((MediaClip)each).SourceStart - each.Range.Duration);
+            if (each is MediaClip media && HasSourceTime(each) && project.FindAsset(media.AssetId) is { Duration.Ticks: > 0 } asset)
+            {
+                // 원본에 남은 길이를 클립 끝의 속도로 나눈 만큼 더 늘일 수 있다.
+                var left = asset.Duration - media.SourceStart - media.SourceOffsetAt(each.Range.Duration);
+                latest = Min(latest, left / SpeedAt(each, each.Range.Duration));
+            }
 
             delta = Min(delta, latest);
             delta = Max(delta, frame - each.Range.Duration);
@@ -248,9 +254,67 @@ public static class SequenceEdits
     /// <summary>영상·오디오 클립은 원본의 길이 안에서만 늘일 수 있다. 이미지·텍스트는 제한이 없다.</summary>
     private static bool HasSourceTime(Clip clip) => clip is VideoClip or AudioClip;
 
+    /// <summary>클립이 시작하고 elapsed가 지났을 때의 재생 속도.</summary>
+    private static double SpeedAt(Clip clip, TimeSpan elapsed) =>
+        clip is MediaClip media ? clip.ValueAt(AnimatedProperty.Speed, media.Speed, clip.Range.Start + elapsed) : 1;
+
     private static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
 
     private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+
+    // ───── 속도 ─────
+
+    /// <summary>
+    /// 클립의 재생 속도를 바꾼다. 원본에서 쓰는 구간은 그대로 두고 길이를 그에 맞게 바꾸되,
+    /// 뒤 클립과 겹치게 되면 뒤 클립 앞까지만 늘인다(그만큼 원본의 뒤쪽이 잘린다).
+    /// </summary>
+    // shortcut: 다른 속성의 키프레임과 페이드는 길이에 맞춰 늘이지 않는다. 필요해지면 키프레임 시각에 같은 비율을 곱한다.
+    public static void SetSpeed(Sequence sequence, MediaClip clip, double speed)
+    {
+        var used = clip.Range.Duration * clip.Speed;
+        clip.Speed = speed;
+
+        var room = sequence.TrackOf(clip)?.Clips.Where(other => other.Range.Start >= clip.Range.End)
+            .Select(other => other.Range.Start - clip.Range.Start).DefaultIfEmpty(TimeSpan.MaxValue).Min() ?? TimeSpan.MaxValue;
+        var duration = Min(sequence.SnapToFrame(used / clip.Speed), room);
+        clip.Range = new TimeRange(clip.Range.Start, Max(duration, sequence.TimeAt(1)));
+    }
+
+    /// <summary>
+    /// time에 멈춘 화면(stillAsset 이미지)을 duration만큼 끼워 넣는다. 클립과 연결된 소리를 time에서 자르고,
+    /// 잠기지 않은 모든 트랙에서 time 이후의 클립을 duration만큼 뒤로 민다. 끼워 넣은 클립을 돌려준다.
+    /// </summary>
+    public static ImageClip? InsertFreezeFrame(Sequence sequence, VideoClip clip, TimeSpan time, Guid stillAsset, TimeSpan duration)
+    {
+        time = sequence.SnapToFrame(time);
+        if (sequence.TrackOf(clip) is not { Locked: false } track || time < clip.Range.Start || time >= clip.Range.End) return null;
+
+        // 효과·마스크·변형은 그대로 물려받고, 움직이던 값은 멈춘 순간의 값으로 굳힌다.
+        var still = (ImageClip)SequenceSnapshot.WithPropertiesOf(
+            new ImageClip { AssetId = stillAsset, Range = new TimeRange(time, duration) }, SequenceSnapshot.Take(clip));
+        still.X = clip.ValueAt(AnimatedProperty.X, clip.X, time);
+        still.Y = clip.ValueAt(AnimatedProperty.Y, clip.Y, time);
+        still.Scale = clip.ValueAt(AnimatedProperty.Scale, clip.Scale, time);
+        still.Rotation = clip.ValueAt(AnimatedProperty.Rotation, clip.Rotation, time);
+        still.Opacity = clip.ValueAt(AnimatedProperty.Opacity, clip.Opacity, time);
+        still.Mask.X = clip.ValueAt(AnimatedProperty.MaskX, clip.Mask.X, time);
+        still.Mask.Y = clip.ValueAt(AnimatedProperty.MaskY, clip.Mask.Y, time);
+        still.Mask.Width = clip.ValueAt(AnimatedProperty.MaskWidth, clip.Mask.Width, time);
+        still.Mask.Height = clip.ValueAt(AnimatedProperty.MaskHeight, clip.Mask.Height, time);
+        still.Keyframes.Clear();
+        still.Speed = 1;
+        still.Transition = TransitionKind.None;
+        still.LinkId = still.GroupId = null;
+
+        Split(sequence, WithLinks(sequence, clip), time);
+        foreach (var later in sequence.Tracks.Where(each => !each.Locked).SelectMany(each => each.Clips)
+                     .Where(other => other.Range.Start >= time).ToList())
+            later.Range = new TimeRange(later.Range.Start + duration, later.Range.Duration);
+
+        track.Clips.Add(still);
+        track.Clips.SortByStart();
+        return still;
+    }
 
     // ───── 그룹과 연결 ─────
 
@@ -355,6 +419,7 @@ public static class SequenceEdits
     public static bool CanAnimate(Clip clip, AnimatedProperty property) => property switch
     {
         AnimatedProperty.Volume => clip is AudioClip,
+        AnimatedProperty.Speed => HasSourceTime(clip),
         >= AnimatedProperty.MaskX => clip is VisualClip,
         _ => clip is VisualClip or TextualClip,
     };

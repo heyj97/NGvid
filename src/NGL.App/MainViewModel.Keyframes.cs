@@ -111,6 +111,7 @@ public partial class MainViewModel
         (VisualClip visual, AnimatedProperty.Rotation) => visual.Rotation,
         (VisualClip visual, AnimatedProperty.Opacity) => visual.Opacity,
         (AudioClip audio, AnimatedProperty.Volume) => audio.Volume,
+        (MediaClip media, AnimatedProperty.Speed) => media.Speed,
         (TextualClip text, AnimatedProperty.X) => text.Style.X,
         (TextualClip text, AnimatedProperty.Y) => text.Style.Y,
         (TextualClip, AnimatedProperty.Scale or AnimatedProperty.Opacity) => 1, // 글자의 크기·불투명도는 100%가 기본
