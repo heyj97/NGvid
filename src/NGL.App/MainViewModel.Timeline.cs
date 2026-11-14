@@ -1,16 +1,17 @@
 using System.Collections.ObjectModel;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NGL.Commands;
 using NGL.Core;
 using NGL.Media;
 
 namespace NGL.App;
 
-/// <summary>타임라인: 트랙, 마커, 확대·스크롤, 파형.</summary>
+/// <summary>타임라인: 트랙, 마커, 확대·스크롤, 파형, 실행 취소.</summary>
 public partial class MainViewModel
 {
     private readonly Dictionary<Guid, Waveform> _waveforms = [];
+    private readonly CommandHistory _history = new();
 
     [ObservableProperty] private double _timelineZoom = 0.7; // 0~1, TimelineView.PixelsPerSecond 참고
     [ObservableProperty] private double _timelineOffset;     // 타임라인 왼쪽 끝의 시각(초)
@@ -24,26 +25,70 @@ public partial class MainViewModel
 
     public TimeSpan Position => _engine?.Position ?? TimeSpan.Zero;
 
+    public string UndoText => _history.UndoName is { } name ? $"실행 취소: {name}" : "실행 취소";
+    public string RedoText => _history.RedoName is { } name ? $"다시 실행: {name}" : "다시 실행";
+
     public Waveform? WaveformOf(Guid assetId) => _waveforms.GetValueOrDefault(assetId);
 
     public AssetItem? ItemOf(Guid assetId) => _allAssets.FirstOrDefault(item => item.Asset.Id == assetId);
 
-    /// <summary>시퀀스를 바꾸고, 화면·길이를 갱신하고, 저장한다.</summary>
-    internal void Edit(Action change)
+    // ───── 편집과 실행 취소 ─────
+
+    /// <summary>
+    /// 시퀀스를 바꾼다. 모든 편집이 여기를 거치므로 실행 취소·화면 갱신·저장이 한 곳에서 처리된다.
+    /// 실제로 바뀐 것이 없으면 기록하지 않는다.
+    /// </summary>
+    internal void Edit(string name, Action change)
     {
-        if (_engine is null) return;
-        _engine.Edit(change);
-        TimelineVersion++;
-        SequenceChanged();
-        Save();
+        if (_engine is null || Project is null) return;
+
+        var command = new SequenceEditCommand(name, Project.Sequence, change);
+        _engine.Edit(command.Execute);
+        if (!command.Changed) return;
+
+        _history.Record(command);
+        AfterEdit();
     }
 
-    private void RefreshTracks()
+    [RelayCommand]
+    private void Undo()
     {
-        Tracks.Clear();
-        if (Project is null) return;
-        foreach (var track in Project.Sequence.Tracks) Tracks.Add(new TrackItem(track, this));
+        if (_engine is null || !_history.CanUndo) return;
+        _engine.Edit(() => _history.Undo());
+        AfterEdit();
+    }
+
+    [RelayCommand]
+    private void Redo()
+    {
+        if (_engine is null || !_history.CanRedo) return;
+        _engine.Edit(() => _history.Redo());
+        AfterEdit();
+    }
+
+    private void AfterEdit()
+    {
         TimelineVersion++;
+        SyncTracks();
+        PruneSelection();
+        SequenceChanged();
+        Save();
+        OnPropertyChanged(nameof(UndoText));
+        OnPropertyChanged(nameof(RedoText));
+    }
+
+    /// <summary>트랙 머리를 시퀀스와 맞춘다. 트랙이 그대로면 값만 다시 읽게 하고, 달라졌으면 새로 만든다.</summary>
+    private void SyncTracks()
+    {
+        var tracks = Project?.Sequence.Tracks ?? [];
+        if (Tracks.Select(item => item.Track).SequenceEqual(tracks))
+        {
+            foreach (var item in Tracks) item.Refresh();
+            return;
+        }
+
+        Tracks.Clear();
+        foreach (var track in tracks) Tracks.Add(new TrackItem(track, this));
     }
 
     // ───── 트랙 ─────
@@ -52,7 +97,7 @@ public partial class MainViewModel
     private void AddTrack(string kind)
     {
         if (Project is not { } project) return;
-        Edit(() =>
+        Edit("트랙 추가", () =>
         {
             switch (kind)
             {
@@ -61,20 +106,11 @@ public partial class MainViewModel
                 default: project.Sequence.AddTrack<CaptionTrack>(); break;
             }
         });
-        RefreshTracks();
     }
 
-    public void DeleteTrack(Track track)
-    {
-        Edit(() => Project?.Sequence.Tracks.Remove(track));
-        RefreshTracks();
-    }
+    public void DeleteTrack(Track track) => Edit("트랙 삭제", () => Project?.Sequence.Tracks.Remove(track));
 
-    public void MoveTrack(Track track, int offset)
-    {
-        Edit(() => Project?.Sequence.MoveTrack(track, offset));
-        RefreshTracks();
-    }
+    public void MoveTrack(Track track, int offset) => Edit("트랙 순서 변경", () => Project?.Sequence.MoveTrack(track, offset));
 
     // ───── 마커 ─────
 
@@ -85,21 +121,38 @@ public partial class MainViewModel
         if (Project is not { } project) return;
         var time = Position;
         if (project.Sequence.Markers.Any(marker => marker.Time == time)) return;
-        Edit(() => project.Sequence.Markers.Add(new Marker { Time = time, Name = $"마커 {project.Sequence.Markers.Count + 1}" }));
+        Edit("마커 추가", () => project.Sequence.Markers.Add(
+            new Marker { Time = time, Name = $"마커 {project.Sequence.Markers.Count + 1}" }));
     }
 
-    public void RenameMarker(Marker marker, string name) => Edit(() => marker.Name = name.Trim());
+    public void RenameMarker(Marker marker, string name) => Edit("마커 이름 변경", () => marker.Name = name.Trim());
 
-    public void DeleteMarker(Marker marker) => Edit(() => Project?.Sequence.Markers.Remove(marker));
+    public void DeleteMarker(Marker marker) => Edit("마커 삭제", () => Project?.Sequence.Markers.Remove(marker));
 
     // ───── 탐색과 배치 ─────
 
-    /// <summary>타임라인에서 고른 시각으로 간다. 스냅이 켜져 있으면 가까운 클립 경계·마커에 붙는다.</summary>
+    /// <summary>
+    /// 스냅이 켜져 있으면 tolerance 안의 클립 경계·마커·재생 위치에 붙인 시각을 돌려준다.
+    /// exclude의 클립(지금 옮기는 클립들)의 경계에는 붙지 않는다.
+    /// </summary>
+    public TimeSpan SnapTime(TimeSpan time, TimeSpan tolerance, IReadOnlyCollection<Clip>? exclude = null, bool toPlayhead = true)
+    {
+        if (!SnapEnabled || Project is not { } project) return time;
+
+        var points = project.Sequence.Tracks.SelectMany(track => track.Clips)
+            .Where(clip => exclude is null || !exclude.Contains(clip))
+            .SelectMany(clip => new[] { clip.Range.Start, clip.Range.End })
+            .Concat(project.Sequence.Markers.Select(marker => marker.Time))
+            .Append(TimeSpan.Zero);
+        if (toPlayhead) points = points.Append(Position);
+        return Sequence.Snap(time, points, tolerance);
+    }
+
+    /// <summary>타임라인에서 고른 시각으로 간다.</summary>
     public void SeekFromTimeline(TimeSpan time, TimeSpan snapTolerance)
     {
-        if (_engine is null || Project is null) return;
-        if (SnapEnabled) time = Sequence.Snap(time, Project.Sequence.SnapPoints(), snapTolerance);
-        _engine.Seek(time);
+        if (_engine is null) return;
+        _engine.Seek(SnapTime(time, snapTolerance, toPlayhead: false));
         Tick();
     }
 
@@ -107,9 +160,8 @@ public partial class MainViewModel
     public void AddToTimelineAt(AssetItem item, Track? track, TimeSpan time, TimeSpan snapTolerance)
     {
         if (Project is not { } project) return;
-        if (SnapEnabled) time = Sequence.Snap(time, project.Sequence.SnapPoints().Append(Position), snapTolerance);
-        Edit(() => project.Sequence.Add(item.Asset, track, time));
-        RefreshTracks();
+        time = SnapTime(time, snapTolerance);
+        Edit("클립 추가", () => project.Sequence.Add(item.Asset, track, time));
     }
 
     /// <summary>소리가 있는 원본의 파형을 뒤에서 만든다.</summary>

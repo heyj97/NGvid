@@ -89,6 +89,23 @@
                         <MenuItem Header="미디어 가져오기" InputGestureText="Ctrl+I" Click="OnImportClick" Foreground="Black"
                                   IsEnabled="{Binding HasProject}" />
                     </MenuItem>
+                    <MenuItem x:Name="EditMenu" Header="편집" Padding="10,6" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Foreground="Black" />
+                        <MenuItem x:Name="RedoItem" Header="{Binding RedoText}" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" Foreground="Black" />
+                        <Separator />
+                        <MenuItem x:Name="SplitItem" Header="재생 위치에서 분할" InputGestureText="Ctrl+K" Command="{Binding SplitCommand}" Foreground="Black" />
+                        <MenuItem x:Name="DeleteItem" Header="삭제" InputGestureText="Delete" Command="{Binding DeleteCommand}" Foreground="Black" />
+                        <MenuItem x:Name="RippleDeleteItem" Header="리플 삭제" InputGestureText="Shift+Delete" Command="{Binding RippleDeleteCommand}" Foreground="Black" />
+                        <Separator />
+                        <MenuItem x:Name="CopyItem" Header="복사" InputGestureText="Ctrl+C" Command="{Binding CopyCommand}" Foreground="Black" />
+                        <MenuItem x:Name="PasteItem" Header="붙여넣기" InputGestureText="Ctrl+V" Command="{Binding PasteCommand}" Foreground="Black" />
+                        <MenuItem x:Name="SelectAllItem" Header="모두 선택" InputGestureText="Ctrl+A" Command="{Binding SelectAllCommand}" Foreground="Black" />
+                        <Separator />
+                        <MenuItem x:Name="GroupItem" Header="그룹" InputGestureText="Ctrl+G" Command="{Binding GroupCommand}" Foreground="Black" />
+                        <MenuItem x:Name="UngroupItem" Header="그룹 해제" InputGestureText="Ctrl+Shift+G" Command="{Binding UngroupCommand}" Foreground="Black" />
+                        <MenuItem x:Name="LinkItem" Header="영상·오디오 연결" Command="{Binding LinkCommand}" Foreground="Black" />
+                        <MenuItem x:Name="UnlinkItem" Header="영상·오디오 분리" Command="{Binding UnlinkCommand}" Foreground="Black" />
+                    </MenuItem>
                 </Menu>
 
                 <ComboBox x:Name="QualityBox" DockPanel.Dock="Right" SelectedIndex="{Binding QualityIndex}" Focusable="False"

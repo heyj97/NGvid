@@ -30,24 +30,30 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | | `assets` | 리소스 보관함의 원본 목록 |
 | `sequence` | `preset` | `name`, `width`, `height`. 16:9(1920×1080), 9:16(1080×1920), 1:1(1080×1080) |
 | | `frameRate` | `30` 또는 `60` |
+| | `markers` | 마커 목록 |
 | | `tracks` | 트랙 목록. 배열 순서가 트랙 순서이고 첫 트랙이 화면 맨 위에 그려진다 |
 | 트랙 | `type` | `VideoTrack`, `AudioTrack`, `CaptionTrack` |
 | | `id`, `name`, `color` | 색상은 `#RRGGBB` |
+| | `locked`, `hidden`, `muted`, `solo` | 잠금, 숨김(영상·자막), 음소거·솔로(오디오) |
 | | `clips` | 클립 목록 |
 | 클립 | `type` | 아래 표 참고 |
 | | `id` | |
 | | `range` | 타임라인에서 차지하는 구간. `start`, `duration` |
+| | `linkId` | 같은 값의 클립끼리 연결됨(영상과 그 소리). 없으면 적지 않는다 |
+| | `groupId` | 같은 값의 클립끼리 그룹. 없으면 적지 않는다 |
+| 마커 | `id`, `time`, `name` | `sequence.markers`의 항목 |
 | 원본 | `id`, `kind` | `kind`는 `Video`, `Audio`, `Image` |
 | | `name` | 보관함과 클립에 표시되는 이름 |
 | | `relativePath` | 예: `media/interview.mp4` |
 | | `duration` | 원본 길이. 이미지는 0 |
+| | `hasAudio` | 영상 원본에 소리가 들어 있는지 |
 
 ### 클립 종류
 
 | `type` | 올릴 수 있는 트랙 | 추가 속성 |
 | --- | --- | --- |
 | `VideoClip` | `VideoTrack` | `assetId`, `sourceStart`(원본에서 재생을 시작하는 위치) |
-| `ImageClip` | `VideoTrack` | `assetId` |
+| `ImageClip` | `VideoTrack` | `assetId` (`sourceStart`는 쓰지 않음) |
 | `TextClip` | `VideoTrack` | `text` |
 | `AudioClip` | `AudioTrack` | `assetId`, `sourceStart` |
 | `CaptionClip` | `CaptionTrack` | `text` |

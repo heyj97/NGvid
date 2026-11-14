@@ -36,7 +36,21 @@ public sealed class TimelineView : FrameworkElement
     private static readonly Typeface TextFace = new("Segoe UI");
     private static readonly Typeface TimeFace = new("Consolas");
 
+    private static readonly Pen SelectedPen = FrozenPen("#FFFFFF", 2);
+    private static readonly Pen GhostPen = DashedPen("#FFFFFF", 1.5);
+
+    private enum DragMode { None, Scrub, Move, TrimStart, TrimEnd }
+
     private readonly Dictionary<string, (Brush Fill, Pen Border)> _trackColors = [];
+
+    // 마우스로 끄는 동안의 상태. 놓을 때 한 번만 편집으로 반영한다.
+    private DragMode _drag;
+    private Clip? _dragClip;
+    private Point _dragOrigin;
+    private TimeSpan _grabOffset; // 잡은 곳이 클립 시작에서 떨어진 거리
+    private bool _dragStarted;    // 조금이라도 움직였는가 (그냥 누른 것과 구별)
+    private TimeSpan _dragTime;   // 옮길 시작 시각 또는 트리밍할 끝의 시각
+    private Track? _dragTrack;    // 옮겨 놓을 트랙
     private (double Position, double Zoom, double Offset, int Version, double Width) _drawn;
     private int _trackCount = -1;
 
@@ -127,6 +141,8 @@ public sealed class TimelineView : FrameworkElement
             if (marker.Name.Length > 0) dc.DrawText(Text(marker.Name, MarkerBrush, TextFace, 10), new Point(x + 8, RulerHeight - 15));
         }
 
+        DrawDragGhost(dc, model, sequence, height);
+
         var playhead = XOf(model.Position);
         if (playhead >= -8 && playhead <= width + 8)
         {
@@ -174,7 +190,7 @@ public sealed class TimelineView : FrameworkElement
 
         var rect = new Rect(left, top + 6, Math.Max(2, right - left), TrackHeight - 12);
         var (fill, border) = ColorsOf(track.Color);
-        dc.DrawRoundedRectangle(fill, border, rect, 5, 5);
+        dc.DrawRoundedRectangle(fill, model.IsSelected(clip) ? SelectedPen : border, rect, 5, 5);
         if (rect.Width < 12) return;
 
         dc.PushClip(new RectangleGeometry(rect, 5, 5));
@@ -201,6 +217,7 @@ public sealed class TimelineView : FrameworkElement
             _ => asset?.Name ?? "(원본 없음)",
         };
         dc.DrawText(Text(label, ClipText, TextFace, 11), new Point(textLeft, rect.Top + 3));
+        if (clip.GroupId is not null) dc.DrawText(Text("그룹", RulerText, TextFace, 9), new Point(textLeft, rect.Bottom - 14));
         dc.Pop();
     }
 
@@ -274,6 +291,13 @@ public sealed class TimelineView : FrameworkElement
         return brush;
     }
 
+    private static Pen DashedPen(string color, double thickness)
+    {
+        var pen = new Pen(Frozen(color), thickness) { DashStyle = DashStyles.Dash };
+        pen.Freeze();
+        return pen;
+    }
+
     private static Pen FrozenPen(string color, double thickness)
     {
         var pen = new Pen(Frozen(color), thickness);
@@ -295,34 +319,154 @@ public sealed class TimelineView : FrameworkElement
         return tracks is not null && point.Y >= RulerHeight && index < tracks.Count ? tracks[index] : null;
     }
 
+    /// <summary>그 위치에 있는 (잠기지 않은 트랙의) 클립.</summary>
+    private Clip? ClipAt(Point point) => TrackAt(point) is { Locked: false } track
+        ? track.Clips.FirstOrDefault(clip => point.X >= XOf(clip.Range.Start) && point.X < XOf(clip.Range.End))
+        : null;
+
+    /// <summary>클립의 어디를 잡았는가: 양끝 6픽셀 안이면 트리밍, 그 밖은 이동.</summary>
+    private DragMode GripOf(Clip clip, double x)
+    {
+        var left = XOf(clip.Range.Start);
+        var right = XOf(clip.Range.End);
+        if (right - left < 16) return DragMode.Move; // 너무 좁으면 끝을 잡기 어렵다
+        return x - left <= 6 ? DragMode.TrimStart : right - x <= 6 ? DragMode.TrimEnd : DragMode.Move;
+    }
+
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         if (Model is not { Project: not null } model) return;
         var point = e.GetPosition(this);
-        if (point.Y > RulerHeight) return;
-
-        if (MarkerAt(point) is { } marker)
-        {
-            // 마커를 누르면 그 위치로 가고, 두 번 누르면 이름을 바꾼다.
-            model.SeekFromTimeline(marker.Time, TimeSpan.Zero);
-            if (e.ClickCount == 2) MarkerRenameRequested?.Invoke(marker);
-        }
-        else
-        {
-            // 눈금을 누르거나 끌면 재생 위치를 옮긴다.
-            CaptureMouse();
-            model.SeekFromTimeline(TimeAt(point.X), SnapTolerance);
-        }
-
         e.Handled = true;
+
+        if (point.Y <= RulerHeight)
+        {
+            if (MarkerAt(point) is { } marker)
+            {
+                // 마커를 누르면 그 위치로 가고, 두 번 누르면 이름을 바꾼다.
+                model.SeekFromTimeline(marker.Time, TimeSpan.Zero);
+                if (e.ClickCount == 2) MarkerRenameRequested?.Invoke(marker);
+            }
+            else
+            {
+                // 눈금을 누르거나 끌면 재생 위치를 옮긴다.
+                _drag = DragMode.Scrub;
+                CaptureMouse();
+                model.SeekFromTimeline(TimeAt(point.X), SnapTolerance);
+            }
+
+            return;
+        }
+
+        if (ClipAt(point) is not { } clip)
+        {
+            model.Select(null); // 빈 곳을 누르면 선택을 푼다
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            model.Select(clip, toggle: true); // Ctrl+클릭: 선택에 더하거나 뺀다
+            return;
+        }
+
+        if (!model.IsSelected(clip)) model.Select(clip);
+        _drag = GripOf(clip, point.X);
+        _dragClip = clip;
+        _dragOrigin = point;
+        _dragStarted = false;
+        _grabOffset = TimeSpan.FromSeconds(point.X / Scale + model.TimelineOffset) - clip.Range.Start;
+        CaptureMouse();
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
-        if (IsMouseCaptured) Model?.SeekFromTimeline(TimeAt(e.GetPosition(this).X), SnapTolerance);
+        if (Model is not { } model) return;
+        var point = e.GetPosition(this);
+
+        if (!IsMouseCaptured)
+        {
+            // 클립의 양끝 위에서는 좌우 화살표로 바꿔 트리밍할 수 있음을 알린다.
+            Cursor = ClipAt(point) is { } hovered && GripOf(hovered, point.X) != DragMode.Move ? Cursors.SizeWE : null;
+            return;
+        }
+
+        if (_drag == DragMode.Scrub)
+        {
+            model.SeekFromTimeline(TimeAt(point.X), SnapTolerance);
+            return;
+        }
+
+        if (_dragClip is not { } clip) return;
+        if (!_dragStarted && Math.Abs(point.X - _dragOrigin.X) < 4 && Math.Abs(point.Y - _dragOrigin.Y) < 4) return;
+        _dragStarted = true;
+
+        var moving = model.SelectedClips();
+        if (_drag == DragMode.Move)
+        {
+            // 클립의 시작이나 끝 중 더 가까이 붙는 쪽에 맞춘다.
+            var start = TimeSpan.FromSeconds(point.X / Scale + model.TimelineOffset) - _grabOffset;
+            var snappedStart = model.SnapTime(start, SnapTolerance, moving);
+            var snappedEnd = model.SnapTime(start + clip.Range.Duration, SnapTolerance, moving) - clip.Range.Duration;
+            _dragTime = snappedStart != start ? snappedStart : snappedEnd;
+            _dragTrack = TrackAt(point);
+        }
+        else
+        {
+            _dragTime = model.SnapTime(TimeAt(point.X), SnapTolerance, moving);
+        }
+
+        InvalidateVisual();
     }
 
-    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) => ReleaseMouseCapture();
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        if (!IsMouseCaptured) return;
+        ReleaseMouseCapture();
+
+        var (drag, clip, started) = (_drag, _dragClip, _dragStarted);
+        _drag = DragMode.None;
+        _dragClip = null;
+        _dragStarted = false;
+        if (Model is not { } model || clip is null || !started) return;
+
+        switch (drag)
+        {
+            case DragMode.Move: model.MoveSelection(clip, _dragTime, _dragTrack); break;
+            case DragMode.TrimStart: model.Trim(clip, start: true, _dragTime); break;
+            case DragMode.TrimEnd: model.Trim(clip, start: false, _dragTime); break;
+        }
+
+        InvalidateVisual();
+    }
+
+    /// <summary>끄는 동안 놓일 자리를 점선으로 보여준다. 실제 결과는 놓았을 때 편집 규칙(끼워 넣기 등)이 정한다.</summary>
+    private void DrawDragGhost(DrawingContext dc, MainViewModel model, Sequence sequence, double height)
+    {
+        if (!_dragStarted || _dragClip is not { } anchor) return;
+
+        if (_drag != DragMode.Move)
+        {
+            var x = XOf(_dragTime);
+            dc.DrawLine(GhostPen, new Point(x, RulerHeight), new Point(x, height));
+            return;
+        }
+
+        var delta = _dragTime - anchor.Range.Start;
+        var anchorTrack = sequence.TrackOf(anchor);
+        foreach (var clip in model.SelectedClips())
+        {
+            // anchor와 같은 트랙의 클립은 마우스가 가리키는 같은 종류의 트랙으로 따라간다.
+            var track = sequence.TrackOf(clip);
+            if (track == anchorTrack && _dragTrack is not null && _dragTrack.GetType() == track?.GetType()) track = _dragTrack;
+            var index = track is null ? -1 : sequence.Tracks.IndexOf(track);
+            if (index < 0) continue;
+
+            var left = XOf(clip.Range.Start + delta);
+            dc.DrawRoundedRectangle(null, GhostPen,
+                new Rect(left, RulerHeight + index * TrackHeight + 6, Math.Max(2, XOf(clip.Range.End + delta) - left), TrackHeight - 12), 5, 5);
+        }
+    }
 
     protected override void OnMouseRightButtonUp(MouseButtonEventArgs e)
     {

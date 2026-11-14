@@ -24,40 +24,36 @@ public class TrackItem(Track track, MainViewModel owner) : ObservableObject
         {
             var name = value.Trim();
             if (name.Length == 0 || name == track.Name) return;
-            owner.Edit(() => track.Name = name);
-            OnPropertyChanged();
+            owner.Edit("트랙 이름 변경", () => track.Name = name);
         }
     }
 
     public bool Locked
     {
         get => track.Locked;
-        set => Set(() => track.Locked = value, nameof(Locked));
+        set => owner.Edit(value ? "트랙 잠금" : "트랙 잠금 해제", () => track.Locked = value);
     }
 
     public bool Hidden
     {
         get => track.Hidden;
-        set => Set(() => track.Hidden = value, nameof(Hidden));
+        set => owner.Edit(value ? "트랙 숨김" : "트랙 표시", () => track.Hidden = value);
     }
 
     public bool Muted
     {
         get => track.Muted;
-        set => Set(() => track.Muted = value, nameof(Muted));
+        set => owner.Edit(value ? "음소거" : "음소거 해제", () => track.Muted = value);
     }
 
     public bool Solo
     {
         get => track.Solo;
-        set => Set(() => track.Solo = value, nameof(Solo));
+        set => owner.Edit(value ? "솔로" : "솔로 해제", () => track.Solo = value);
     }
 
-    public void SetColor(string color) => Set(() => track.Color = color, nameof(Color));
+    public void SetColor(string color) => owner.Edit("트랙 색상 변경", () => track.Color = color);
 
-    private void Set(Action change, string property)
-    {
-        owner.Edit(change);
-        OnPropertyChanged(property);
-    }
+    /// <summary>편집이나 실행 취소 뒤에 화면이 값을 다시 읽게 한다.</summary>
+    public void Refresh() => OnPropertyChanged(string.Empty);
 }

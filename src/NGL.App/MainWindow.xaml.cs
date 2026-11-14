@@ -174,15 +174,25 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        var control = Keyboard.Modifiers == ModifierKeys.Control;
-        if (control)
+        var typing = Keyboard.FocusedElement is TextBox;
+        var commands = _viewModel;
+
+        if (Keyboard.Modifiers == ModifierKeys.Control)
         {
             switch (e.Key)
             {
                 case Key.N: OnNewClick(this, e); break;
                 case Key.O: OnOpenClick(this, e); break;
-                case Key.S: _viewModel.SaveCommand.Execute(null); break;
-                case Key.I when _viewModel.HasProject: OnImportClick(this, e); break;
+                case Key.S: commands.SaveCommand.Execute(null); break;
+                case Key.I when commands.HasProject: OnImportClick(this, e); break;
+                // 글자를 입력하는 중에는 Ctrl+Z·C·V·A가 입력 칸의 것이다.
+                case Key.Z when !typing: commands.UndoCommand.Execute(null); break;
+                case Key.Y when !typing: commands.RedoCommand.Execute(null); break;
+                case Key.K when !typing: commands.SplitCommand.Execute(null); break;
+                case Key.C when !typing: commands.CopyCommand.Execute(null); break;
+                case Key.V when !typing: commands.PasteCommand.Execute(null); break;
+                case Key.A when !typing: commands.SelectAllCommand.Execute(null); break;
+                case Key.G when !typing: commands.GroupCommand.Execute(null); break;
                 default: return;
             }
 
@@ -190,8 +200,29 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 글자를 입력하는 중에는 한 글자 단축키를 쓰지 않는다.
-        if (Keyboard.Modifiers != ModifierKeys.None || Keyboard.FocusedElement is TextBox) return;
+        if (typing) return; // 글자를 입력하는 중에는 아래 단축키를 쓰지 않는다.
+
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            switch (e.Key)
+            {
+                case Key.Z: commands.RedoCommand.Execute(null); break;
+                case Key.G: commands.UngroupCommand.Execute(null); break;
+                default: return;
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.Shift && e.Key == Key.Delete)
+        {
+            commands.RippleDeleteCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers != ModifierKeys.None) return;
 
         switch (e.Key)
         {
@@ -202,6 +233,8 @@ public partial class MainWindow : Window
             case Key.O: _viewModel.SetLoopEndCommand.Execute(null); break;
             case Key.L: _viewModel.ToggleLoopCommand.Execute(null); break;
             case Key.M: _viewModel.AddMarkerCommand.Execute(null); break;
+            case Key.S: _viewModel.SplitCommand.Execute(null); break;
+            case Key.Delete: _viewModel.DeleteCommand.Execute(null); break;
             default: return;
         }
 

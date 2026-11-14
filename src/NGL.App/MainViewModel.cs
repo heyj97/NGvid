@@ -102,7 +102,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         RebuildEngine();
         RefreshLibrary();
-        RefreshTracks();
+        _history.Clear();
+        _history.Limit = NGL.IO.AppSettingsStore.Load().UndoLimit;
+        _selection.Clear();
+        _clipboard = [];
+        SyncTracks();
+        TimelineVersion++;
+        OnPropertyChanged(nameof(UndoText));
+        OnPropertyChanged(nameof(RedoText));
         TimelineOffset = 0;
     }
 
@@ -213,8 +220,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void AddToTimeline(AssetItem item)
     {
         if (Project is not { } project) return;
-        Edit(() => project.Sequence.AddToEnd(item.Asset));
-        RefreshTracks();
+        Edit("클립 추가", () => project.Sequence.AddToEnd(item.Asset));
     }
 
     /// <summary>사라진 원본 하나를 고른 파일로 다시 연결한다.</summary>
