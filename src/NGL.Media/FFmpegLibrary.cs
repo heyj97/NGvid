@@ -61,5 +61,13 @@ internal static unsafe class FFmpegError
     public static long FromTimeSpan(TimeSpan time, AVRational timeBase) =>
         ffmpeg.av_rescale_q(time.Ticks, TickBase, timeBase);
 
+    /// <summary>
+    /// 파일의 시작 시각을 스트림의 시간 단위로 바꾼 값. 영상과 소리가 같은 기준을 써야 서로 어긋나지 않는다.
+    /// </summary>
+    public static long FileStart(AVFormatContext* format, AVRational timeBase) =>
+        format->start_time == ffmpeg.AV_NOPTS_VALUE
+            ? 0
+            : ffmpeg.av_rescale_q(format->start_time, new AVRational { num = 1, den = ffmpeg.AV_TIME_BASE }, timeBase);
+
     private static readonly AVRational TickBase = new() { num = 1, den = (int)TimeSpan.TicksPerSecond };
 }

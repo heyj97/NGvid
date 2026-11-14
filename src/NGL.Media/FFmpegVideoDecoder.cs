@@ -66,7 +66,7 @@ public sealed unsafe class FFmpegVideoDecoder : IVideoDecoder
             _scaler = ffmpeg.sws_alloc_context();
 
             _timeBase = stream->time_base;
-            _startPts = stream->start_time == ffmpeg.AV_NOPTS_VALUE ? 0 : stream->start_time;
+            _startPts = FFmpegError.FileStart(_format, _timeBase);
 
             Width = _codec->width;
             Height = _codec->height;
