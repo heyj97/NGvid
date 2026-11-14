@@ -102,6 +102,14 @@ public partial class MainWindow : Window
         _viewModel.DeleteTrack(item.Track);
     }
 
+    private void OnSaveStylePresetClick(object sender, RoutedEventArgs e)
+    {
+        if (PromptWindow.Ask(this, "스타일 프리셋 이름", "내 스타일") is { } name) _viewModel.SaveStylePreset(name);
+    }
+
+    /// <summary>자막 목록 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
+    private void OnCaptionListClick(object sender, RoutedEventArgs e) => new CaptionListWindow(_viewModel) { Owner = this }.Show();
+
     private void OnSavePresetClick(object sender, RoutedEventArgs e)
     {
         if (PromptWindow.Ask(this, "프리셋 이름", "내 움직임") is { } name) _viewModel.SavePreset(name);
@@ -255,6 +263,8 @@ public partial class MainWindow : Window
             case Key.O: _viewModel.SetLoopEndCommand.Execute(null); break;
             case Key.L: _viewModel.ToggleLoopCommand.Execute(null); break;
             case Key.M: _viewModel.AddMarkerCommand.Execute(null); break;
+            case Key.T: _viewModel.AddTextCommand.Execute(null); break;
+            case Key.C: _viewModel.AddCaptionCommand.Execute(null); break;
             case Key.S: _viewModel.SplitCommand.Execute(null); break;
             case Key.Delete: _viewModel.DeleteCommand.Execute(null); break;
             default: return;

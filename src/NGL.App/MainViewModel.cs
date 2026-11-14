@@ -113,6 +113,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         RefreshLibrary();
         _history.Clear();
         RefreshPresets();
+        RefreshStylePresets();
         _history.Limit = NGL.IO.AppSettingsStore.Load().UndoLimit;
         _selection.Clear();
         _clipboard = [];

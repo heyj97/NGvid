@@ -21,7 +21,7 @@ public partial class MainViewModel
     public bool HasVisualSelection => FirstVisual is not null;
 
     /// <summary>패널에 보여줄 것이 없는가.</summary>
-    public bool HasNoSelection => !HasVisualSelection && !HasAudioSelection;
+    public bool HasNoSelection => !HasVisualSelection && !HasAudioSelection && !HasTextSelection;
 
     public string VisualTitle => SelectedVisualClips() is { Count: > 0 } clips
         ? clips.Count == 1 ? (clips[0] is ImageClip ? "이미지 클립" : "영상 클립") : $"화면 클립 {clips.Count}개"

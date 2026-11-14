@@ -94,6 +94,12 @@
                     <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,6" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" Foreground="Black" />
                     </MenuItem>
+                    <MenuItem x:Name="TextMenu" Header="텍스트·자막" Padding="10,6" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="AddTextItem" Header="텍스트 추가" InputGestureText="T" Command="{Binding AddTextCommand}" Foreground="Black" />
+                        <MenuItem x:Name="AddCaptionItem" Header="자막 추가" InputGestureText="C" Command="{Binding AddCaptionCommand}" Foreground="Black" />
+                        <Separator />
+                        <MenuItem x:Name="CaptionListItem" Header="자막 목록…" Click="OnCaptionListClick" Foreground="Black" />
+                    </MenuItem>
                     <MenuItem x:Name="EditMenu" Header="편집" Padding="10,6" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Foreground="Black" />
                         <MenuItem x:Name="RedoItem" Header="{Binding RedoText}" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" Foreground="Black" />
@@ -306,6 +312,61 @@
                         </StackPanel>
                         <Button x:Name="ResetTransformButton" Content="변형 초기화" Command="{Binding ResetTransformCommand}" Margin="0"
                                 ToolTip="위치·크기·회전·자르기·뒤집기를 처음 상태로 되돌립니다" />
+                    </StackPanel>
+
+                    <!-- 텍스트·자막 -->
+                    <StackPanel x:Name="TextInspector" Margin="0,0,0,16" Visibility="{Binding HasTextSelection, Converter={StaticResource Visible}}">
+                        <TextBlock x:Name="TextTitle" Text="{Binding TextTitle}" FontWeight="Medium" Margin="0,0,0,12" />
+                        <TextBox x:Name="TextContentBox" Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
+                                 Width="Auto" HorizontalAlignment="Stretch" MinHeight="54" Margin="0,0,0,8" ToolTip="문구. Enter로 줄을 바꾸고, 다른 곳을 눌러 확정합니다." />
+                        <DockPanel>
+                            <ComboBox x:Name="FontBox" DockPanel.Dock="Right" Width="150" ItemsSource="{x:Static local:MainViewModel.FontNames}"
+                                      SelectedItem="{Binding FontName}" Focusable="False" />
+                            <TextBlock Text="글꼴" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <CheckBox x:Name="BoldBox" DockPanel.Dock="Right" Content="굵게" IsChecked="{Binding TextBold}" Foreground="#E6E7EA" Focusable="False" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            <TextBox x:Name="TextSizeBox" DockPanel.Dock="Right" Text="{Binding TextSize, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="크기" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="TextColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding TextColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="글자 색" Style="{StaticResource Label}" ToolTip="#RRGGBB. 앞에 두 자리를 더 쓰면 투명도(#AARRGGBB)." />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="OutlineWidthBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding OutlineWidth, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="두께 (0이면 없음)" />
+                            <TextBox x:Name="OutlineColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding OutlineColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="외곽선" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="ShadowOffsetBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding ShadowOffset, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="거리 (0이면 없음)" />
+                            <TextBox x:Name="ShadowColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding ShadowColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="그림자" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="BoxColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding BoxColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="배경 박스" Style="{StaticResource Label}" ToolTip="색을 적으면 글자 뒤에 박스를 깝니다. 비우면 없음. 예: #CC000000" />
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}">
+                            <TextBox x:Name="HighlightColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding HighlightColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="단어 강조" Style="{StaticResource Label}" ToolTip="색을 적으면 말하는 단어를 그 색으로 강조합니다. 비우면 없음. 예: #FFE14D" />
+                        </DockPanel>
+                        <DockPanel>
+                            <Button x:Name="TextPositionKeyButton" DockPanel.Dock="Right" Content="{Binding PositionKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Position"
+                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기" />
+                            <TextBox x:Name="TextYBox" DockPanel.Dock="Right" Width="56" Margin="6,0,0,0" Text="{Binding TextY, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="아래로 (픽셀)" />
+                            <TextBox x:Name="TextXBox" DockPanel.Dock="Right" Width="56" Text="{Binding TextX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
+                            <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <Button x:Name="ApplyStylePresetButton" DockPanel.Dock="Right" Content="적용" Command="{Binding ApplyStylePresetCommand}" Margin="4,0,0,0" Padding="8,4" />
+                            <ComboBox x:Name="StylePresetBox" ItemsSource="{Binding StylePresetNames}" SelectedIndex="{Binding StylePresetIndex}" Focusable="False" />
+                        </DockPanel>
+                        <Button x:Name="SaveStylePresetButton" Content="이 스타일을 프리셋으로 저장" Click="OnSaveStylePresetClick" Margin="0,0,0,6" />
+                        <Button x:Name="DeleteStylePresetButton" Content="고른 프리셋 삭제" Command="{Binding DeleteStylePresetCommand}" Margin="0,0,0,6" />
+                        <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 자막에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
+                                Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}"
+                                ToolTip="문구와 시간은 그대로 두고 스타일만 복사합니다" />
                     </StackPanel>
 
                     <!-- 오디오 클립과 그 트랙 -->
