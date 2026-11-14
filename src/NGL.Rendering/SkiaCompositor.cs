@@ -27,7 +27,7 @@ public sealed class SkiaCompositor : IFrameCompositor
         // 목록의 첫 트랙이 맨 위에 보여야 하므로 마지막 트랙부터 그린다.
         for (var i = sequence.Tracks.Count - 1; i >= 0; i--)
         {
-            if (sequence.Tracks[i] is not VideoTrack track) continue;
+            if (sequence.Tracks[i] is not VideoTrack { Hidden: false } track) continue;
 
             foreach (var clip in track.Clips)
             {

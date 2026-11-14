@@ -10,6 +10,19 @@ public abstract class Track
     public Guid Id { get; init; } = Guid.NewGuid();
     public string Name { get; set; } = "";
     public string Color { get; set; } = "#4C8DFF";
+
+    /// <summary>잠근 트랙의 클립은 편집할 수 없다.</summary>
+    public bool Locked { get; set; }
+
+    /// <summary>숨긴 영상·자막 트랙은 화면에 그리지 않는다.</summary>
+    public bool Hidden { get; set; }
+
+    /// <summary>음소거한 오디오 트랙은 소리를 내지 않는다.</summary>
+    public bool Muted { get; set; }
+
+    /// <summary>솔로인 오디오 트랙이 하나라도 있으면 솔로인 트랙만 소리를 낸다.</summary>
+    public bool Solo { get; set; }
+
     public ClipCollection Clips { get; }
 
     public abstract bool Accepts(Clip clip);
@@ -22,11 +35,15 @@ public sealed class VideoTrack : Track
 
 public sealed class AudioTrack : Track
 {
+    public AudioTrack() => Color = "#3FA87A";
+
     public override bool Accepts(Clip clip) => clip is AudioClip;
 }
 
 public sealed class CaptionTrack : Track
 {
+    public CaptionTrack() => Color = "#C79A2B";
+
     public override bool Accepts(Clip clip) => clip is CaptionClip;
 }
 

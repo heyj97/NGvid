@@ -43,9 +43,11 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
             var start = _position;
             var end = start + frames;
 
+            // 솔로인 트랙이 있으면 그 트랙들만, 없으면 음소거하지 않은 트랙들이 소리를 낸다.
+            var anySolo = sequence.Tracks.Any(track => track is AudioTrack { Solo: true });
             foreach (var track in sequence.Tracks)
             {
-                if (track is not AudioTrack) continue;
+                if (track is not AudioTrack || track.Muted || (anySolo && !track.Solo)) continue;
 
                 foreach (var clip in track.Clips)
                 {

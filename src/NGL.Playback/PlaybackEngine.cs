@@ -274,6 +274,7 @@ public sealed class PlaybackEngine : IDisposable
         lock (_sequenceGate)
         {
             visible = _sequence.Tracks.OfType<VideoTrack>()
+                .Where(track => !track.Hidden)
                 .SelectMany(track => track.Clips)
                 .Where(clip => clip.Range.Contains(time))
                 .ToList();
