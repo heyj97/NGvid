@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Media;
 using Microsoft.Win32;
 using NGL.Rendering;
 using SkiaSharp;
@@ -17,13 +18,22 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = _viewModel;
-        _viewModel.RenderRequested += Preview.InvalidateVisual;
-        Closed += (_, _) => _viewModel.Dispose();
+        // 새 프레임은 디코딩 스레드에서 준비되므로 화면 스레드로 넘겨서 다시 그린다.
+        _viewModel.RenderRequested += () => Dispatcher.BeginInvoke(Preview.InvalidateVisual);
+        // 화면을 그릴 때마다 재생 위치 표시(슬라이더·타임코드)를 갱신한다.
+        CompositionTarget.Rendering += OnRendering;
+        Closed += (_, _) =>
+        {
+            CompositionTarget.Rendering -= OnRendering;
+            _viewModel.Dispose();
+        };
 
         // 실행할 때 파일 경로를 주면 바로 연다. (탐색기에서 실행 파일에 끌어 놓기)
         var args = Environment.GetCommandLineArgs();
         if (args.Length > 1) _viewModel.Open(args[1]);
     }
+
+    private void OnRendering(object? sender, EventArgs e) => _viewModel.Tick();
 
     private void OnOpenClick(object sender, RoutedEventArgs e)
     {
