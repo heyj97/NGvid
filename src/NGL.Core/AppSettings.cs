@@ -33,4 +33,27 @@ public sealed class AppSettings
 
     /// <summary>프록시가 있는 영상은 미리보기에서 프록시를 쓴다. 내보내기는 언제나 원본을 쓴다.</summary>
     public bool UseProxies { get; set; } = true;
+
+    // 편집 창의 패널 크기. 경계를 끌어서 바꾼 값을 기억한다.
+    private double _libraryWidth = 280;
+    private double _inspectorWidth = 300;
+    private double _timelineHeight = 282; // 도구줄 + 눈금 + 트랙 4개 + 가로 스크롤 막대
+
+    public double LibraryWidth
+    {
+        get => _libraryWidth;
+        set => _libraryWidth = Math.Clamp(value, 200, 600);
+    }
+
+    public double InspectorWidth
+    {
+        get => _inspectorWidth;
+        set => _inspectorWidth = Math.Clamp(value, 240, 600);
+    }
+
+    public double TimelineHeight
+    {
+        get => _timelineHeight;
+        set => _timelineHeight = Math.Clamp(value, 140, 1200);
+    }
 }

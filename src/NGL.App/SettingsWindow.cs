@@ -38,6 +38,10 @@ public static class SettingsWindow
             BackupMinutes = int.TryParse(minutes.Text, out var b) ? b : current.BackupMinutes,
             BackupCount = int.TryParse(count.Text, out var c) ? c : current.BackupCount,
             UseProxies = proxies.IsChecked == true,
+            // 이 창에서 고치지 않는 값은 그대로 가져간다.
+            LibraryWidth = current.LibraryWidth,
+            InspectorWidth = current.InspectorWidth,
+            TimelineHeight = current.TimelineHeight,
         };
     }
 

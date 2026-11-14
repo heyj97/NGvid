@@ -69,8 +69,8 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="36" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="260" />
+            <RowDefinition x:Name="TimelineRow" Height="282" MinHeight="140" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -118,6 +118,8 @@
                     </MenuItem>
                     <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,5" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" />
+                        <MenuItem x:Name="ResetLayoutItem" Header="레이아웃 초기화" Click="OnResetLayoutClick"
+                                  ToolTip="보관함·속성 패널의 너비와 타임라인의 높이를 처음 크기로 되돌립니다" />
                     </MenuItem>
                 </Menu>
 
@@ -137,9 +139,9 @@
         <!-- 가운데: 보관함 + 미리보기 + 속성 패널 -->
         <Grid Grid.Row="1" Visibility="{Binding HasProject, Converter={StaticResource Visible}}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition x:Name="LibraryColumn" Width="280" MinWidth="200" MaxWidth="600" />
+                <ColumnDefinition Width="*" MinWidth="420" />
+                <ColumnDefinition x:Name="InspectorColumn" Width="300" MinWidth="240" MaxWidth="600" />
             </Grid.ColumnDefinitions>
 
             <!-- 리소스 보관함 -->
@@ -682,10 +684,13 @@
                 </StackPanel>
                 </ScrollViewer>
             </Border>
+            <!-- 패널 사이의 경계를 끌어 너비를 바꾼다. -->
+            <GridSplitter Grid.Column="0" Width="5" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="Transparent" Focusable="False" />
+            <GridSplitter Grid.Column="2" Width="5" HorizontalAlignment="Left" VerticalAlignment="Stretch" Background="Transparent" Focusable="False" />
         </Grid>
 
         <!-- 프로젝트가 없을 때 -->
-        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="260">
+        <StackPanel Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="260">
             <StackPanel.Style>
                 <Style TargetType="StackPanel">
                     <Style.Triggers>
@@ -756,9 +761,9 @@
                 <ScrollBar x:Name="TimelineScroll" DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="180,0,0,0"
                            ValueChanged="OnTimelineScroll" Focusable="False" />
 
-                <!-- 높이는 눈금 + 트랙 4개로 고정한다. 트랙이 더 많으면 세로로 스크롤한다. -->
+                <!-- 처음 높이는 눈금 + 트랙 4개다(TimelineRow). 트랙이 더 많으면 세로로 스크롤한다. -->
                 <!-- shortcut: 세로로 스크롤하면 시간 눈금도 함께 올라간다. 불편하면 눈금을 따로 고정한다. -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="220" Focusable="False">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180" />
@@ -820,6 +825,10 @@
                 </ScrollViewer>
             </DockPanel>
         </Border>
+
+        <!-- 타임라인의 위쪽 경계를 끌어 높이를 바꾼다. -->
+        <GridSplitter Grid.Row="2" Height="5" VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="Transparent" Focusable="False"
+                      Visibility="{Binding HasProject, Converter={StaticResource Visible}}" />
 
         <!-- 알림 -->
         <TextBlock Grid.Row="3" x:Name="StatusLabel" Text="{Binding StatusText}" Foreground="#FFB454" Margin="16,6" TextWrapping="Wrap">

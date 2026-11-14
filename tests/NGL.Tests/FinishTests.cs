@@ -103,6 +103,20 @@ public sealed class FinishTests : IDisposable
         Assert.Equal(5, AppSettingsStore.Load(Path.Combine(_folder, "없음.json")).BackupMinutes);
     }
 
+    [Fact]
+    public void 패널_크기는_범위_안으로_맞춰지고_저장했다_읽어도_그대로다()
+    {
+        var settings = new AppSettings { LibraryWidth = 50, InspectorWidth = 5000, TimelineHeight = 400 };
+        Assert.Equal((200, 600, 400), (settings.LibraryWidth, settings.InspectorWidth, settings.TimelineHeight));
+
+        var path = Path.Combine(_folder, "settings.json");
+        AppSettingsStore.Save(settings, path);
+        var loaded = AppSettingsStore.Load(path);
+
+        Assert.Equal((200, 600, 400), (loaded.LibraryWidth, loaded.InspectorWidth, loaded.TimelineHeight));
+        Assert.Equal((280, 300, 282), (new AppSettings().LibraryWidth, new AppSettings().InspectorWidth, new AppSettings().TimelineHeight));
+    }
+
     // ───── 프록시 ─────
 
     [Fact]

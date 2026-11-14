@@ -29,6 +29,9 @@ public partial class MainWindow : Window
         // 화면을 그릴 때마다 재생 위치 표시(슬라이더·타임코드)를 갱신한다.
         CompositionTarget.Rendering += OnRendering;
         Timeline.MarkerRenameRequested += OnMarkerRename;
+        // 패널 크기는 지난번에 끌어서 맞춰 둔 대로 열고, 닫을 때 기억한다.
+        ApplyLayout(_viewModel.Settings);
+        Closing += (_, _) => _viewModel.SaveLayout(LibraryColumn.Width.Value, InspectorColumn.Width.Value, TimelineRow.Height.Value);
         Closed += (_, _) =>
         {
             CompositionTarget.Rendering -= OnRendering;
@@ -39,6 +42,15 @@ public partial class MainWindow : Window
         var args = Environment.GetCommandLineArgs();
         if (args.Length > 1) _viewModel.OpenProject(args[1]);
     }
+
+    private void ApplyLayout(NGL.Core.AppSettings settings)
+    {
+        LibraryColumn.Width = new GridLength(settings.LibraryWidth);
+        InspectorColumn.Width = new GridLength(settings.InspectorWidth);
+        TimelineRow.Height = new GridLength(settings.TimelineHeight);
+    }
+
+    private void OnResetLayoutClick(object sender, RoutedEventArgs e) => ApplyLayout(new NGL.Core.AppSettings());
 
     private bool _updatingScroll;
 

@@ -31,6 +31,20 @@ public partial class MainViewModel
         RebuildEngine(); // 프록시 사용 여부가 바뀌었을 수 있다
     }
 
+    /// <summary>패널 크기를 기억해 둔다. 창을 닫을 때 부른다.</summary>
+    public void SaveLayout(double libraryWidth, double inspectorWidth, double timelineHeight)
+    {
+        (_settings.LibraryWidth, _settings.InspectorWidth, _settings.TimelineHeight) = (libraryWidth, inspectorWidth, timelineHeight);
+        try
+        {
+            AppSettingsStore.Save(_settings);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // 닫는 중이라 알릴 곳이 없다. 다음에는 이전 크기로 열린다.
+        }
+    }
+
     // ───── 자동 백업 ─────
 
     /// <summary>마지막 백업에서 정해 둔 시간이 지났으면 백업한다. 화면을 그릴 때마다 불린다.</summary>
