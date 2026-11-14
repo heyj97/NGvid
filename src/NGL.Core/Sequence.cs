@@ -134,6 +134,25 @@ public sealed class Sequence
     }
 
     /// <summary>그 종류의 잠기지 않은 첫 트랙. 없으면 새로 만든다.</summary>
+    /// <summary>
+    /// time의 화면을 그리는 데 그림이 필요한 영상·이미지 클립들: 그 시각에 놓인 클립과,
+    /// 전환 중이라 함께 보여야 하는 앞 클립. 숨긴 트랙은 뺀다.
+    /// </summary>
+    public List<VisualClip> VisualsAt(TimeSpan time)
+    {
+        var result = new List<VisualClip>();
+        foreach (var track in Tracks.Where(track => track is VideoTrack { Hidden: false }))
+        {
+            foreach (var clip in track.Clips.OfType<VisualClip>().Where(clip => clip.Range.Contains(time)))
+            {
+                result.Add(clip);
+                if (Transitions.Outgoing(track, clip, time) is { } outgoing) result.Add(outgoing);
+            }
+        }
+
+        return result;
+    }
+
     // ───── 텍스트와 자막 ─────
 
     /// <summary>텍스트 클립을 처음 놓을 때의 길이.</summary>

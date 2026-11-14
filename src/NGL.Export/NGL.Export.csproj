@@ -6,6 +6,7 @@
     <ProjectReference Include="..\NGL.Audio\NGL.Audio.csproj" />
     <ProjectReference Include="..\NGL.Media\NGL.Media.csproj" />
     <ProjectReference Include="..\NGL.Playback\NGL.Playback.csproj" />
+    <ProjectReference Include="..\NGL.IO\NGL.IO.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

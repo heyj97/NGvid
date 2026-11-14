@@ -26,7 +26,7 @@ public sealed class PlaybackEngine : IDisposable
     }
 
     private readonly Sequence _sequence;
-    private readonly IFrameCompositor _compositor = new SkiaCompositor();
+    private readonly IFrameCompositor _compositor;
     private readonly VideoFrameSource _video; // 작업 스레드만 쓴다
     private readonly SequenceAudioReader _audio;
     private readonly IAudioOutput _output;
@@ -50,9 +50,11 @@ public sealed class PlaybackEngine : IDisposable
     /// <summary>재생이 끝에 닿아 스스로 멈췄다. 작업 스레드에서 불린다.</summary>
     public event Action? Ended;
 
-    public PlaybackEngine(Sequence sequence, Func<Guid, string?> pathOfAsset, IAudioOutput output)
+    /// <param name="lutOf">클립에 적힌 LUT 경로로 색 변환표를 찾아 준다. 없으면 LUT는 적용하지 않는다.</param>
+    public PlaybackEngine(Sequence sequence, Func<Guid, string?> pathOfAsset, IAudioOutput output, Func<string, CubeLut?>? lutOf = null)
     {
         _sequence = sequence;
+        _compositor = new SkiaCompositor(lutOf);
         _video = new VideoFrameSource(pathOfAsset);
         _audio = new SequenceAudioReader(sequence, pathOfAsset, _sequenceGate);
         _output = output;
@@ -274,15 +276,8 @@ public sealed class PlaybackEngine : IDisposable
         var images = new Dictionary<Guid, SKImage>();
 
         // 목록은 잠근 채로 훑어 두고, 오래 걸리는 디코딩은 잠금 밖에서 한다.
-        List<Clip> visible;
-        lock (_sequenceGate)
-        {
-            visible = _sequence.Tracks.OfType<VideoTrack>()
-                .Where(track => !track.Hidden)
-                .SelectMany(track => track.Clips)
-                .Where(clip => clip.Range.Contains(time))
-                .ToList();
-        }
+        List<VisualClip> visible;
+        lock (_sequenceGate) visible = _sequence.VisualsAt(time);
 
         {
             foreach (var clip in visible)

@@ -116,7 +116,7 @@ public sealed unsafe class Mp4Exporter : IExporter
         using var frames = new VideoFrameSource(PathOf);
         using var audio = new SequenceAudioReader(sequence, PathOf);
         using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
-        var compositor = new SkiaCompositor();
+        var compositor = new SkiaCompositor(NGL.IO.CubeLutParser.LoaderFor(projectFolder));
 
         // ── 출력 파일과 인코더 ──
         AVFormatContext* format = null;
@@ -269,8 +269,7 @@ public sealed unsafe class Mp4Exporter : IExporter
         frames.BeginFrame();
         try
         {
-            foreach (var clip in sequence.Tracks.OfType<VideoTrack>().Where(track => !track.Hidden)
-                         .SelectMany(track => track.Clips).Where(clip => clip.Range.Contains(time)))
+            foreach (var clip in sequence.VisualsAt(time))
             {
                 var image = clip switch
                 {
