@@ -24,7 +24,7 @@ public sealed class Sequence
             : throw new ArgumentOutOfRangeException(nameof(value), value, "지원하지 않는 프레임레이트입니다.");
     }
 
-    /// <summary>목록의 순서가 트랙 순서다.</summary>
+    /// <summary>목록의 순서가 트랙 순서다. 첫 트랙이 화면 맨 위에 그려진다.</summary>
     public List<Track> Tracks { get; } = [];
 
     /// <summary>가장 늦게 끝나는 클립의 끝 시각.</summary>

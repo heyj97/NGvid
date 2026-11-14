@@ -30,7 +30,7 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | | `assets` | 리소스 보관함의 원본 목록 |
 | `sequence` | `preset` | `name`, `width`, `height`. 16:9(1920×1080), 9:16(1080×1920), 1:1(1080×1080) |
 | | `frameRate` | `30` 또는 `60` |
-| | `tracks` | 트랙 목록. 배열 순서가 트랙 순서 |
+| | `tracks` | 트랙 목록. 배열 순서가 트랙 순서이고 첫 트랙이 화면 맨 위에 그려진다 |
 | 트랙 | `type` | `VideoTrack`, `AudioTrack`, `CaptionTrack` |
 | | `id`, `name`, `color` | 색상은 `#RRGGBB` |
 | | `clips` | 클립 목록 |
