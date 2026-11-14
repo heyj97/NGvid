@@ -1,5 +1,7 @@
 using System.Globalization;
 using NGL.Core;
+using NGL.Rendering;
+using SkiaSharp;
 
 namespace NGL.App;
 
@@ -31,35 +33,35 @@ public partial class MainViewModel
     public string PositionX
     {
         get => Number(Shown(FirstVisual, AnimatedProperty.X, FirstVisual?.X));
-        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.X, number, (clip, x) => ((VisualClip)clip).X = x));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.X, number, (VisualClip clip, double x) => clip.X = x));
     }
 
     /// <summary>화면 가운데에서 아래로 옮긴 거리(픽셀).</summary>
     public string PositionY
     {
         get => Number(Shown(FirstVisual, AnimatedProperty.Y, FirstVisual?.Y));
-        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (clip, y) => ((VisualClip)clip).Y = y));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (VisualClip clip, double y) => clip.Y = y));
     }
 
     /// <summary>크기(%). 10~400.</summary>
     public string ScalePercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.Scale, FirstVisual?.Scale));
-        set => SetNumber(value, 10, 400, number => SetAnimated("크기 변경", AnimatedProperty.Scale, number / 100, (clip, scale) => ((VisualClip)clip).Scale = scale));
+        set => SetNumber(value, 10, 400, number => SetAnimated("크기 변경", AnimatedProperty.Scale, number / 100, (VisualClip clip, double scale) => clip.Scale = scale));
     }
 
     /// <summary>시계 방향 회전(도).</summary>
     public string RotationDegrees
     {
         get => Number(Shown(FirstVisual, AnimatedProperty.Rotation, FirstVisual?.Rotation));
-        set => SetNumber(value, -3600, 3600, number => SetAnimated("회전 변경", AnimatedProperty.Rotation, number, (clip, rotation) => ((VisualClip)clip).Rotation = rotation));
+        set => SetNumber(value, -3600, 3600, number => SetAnimated("회전 변경", AnimatedProperty.Rotation, number, (VisualClip clip, double rotation) => clip.Rotation = rotation));
     }
 
     /// <summary>불투명도(%).</summary>
     public string OpacityPercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.Opacity, FirstVisual?.Opacity));
-        set => SetNumber(value, 0, 100, number => SetAnimated("불투명도 변경", AnimatedProperty.Opacity, number / 100, (clip, opacity) => ((VisualClip)clip).Opacity = opacity));
+        set => SetNumber(value, 0, 100, number => SetAnimated("불투명도 변경", AnimatedProperty.Opacity, number / 100, (VisualClip clip, double opacity) => clip.Opacity = opacity));
     }
 
     public static IReadOnlyList<string> BlendNames { get; } = ["일반", "곱하기", "스크린", "오버레이", "더하기"];
@@ -185,8 +187,45 @@ public partial class MainViewModel
         RefreshInspector();
     }
 
+    /// <summary>
+    /// 선택한 클립들 중 지금 화면에 보이는 것의 네 귀퉁이(시퀀스 좌표). 미리보기에 테두리를 그릴 때 쓴다.
+    /// </summary>
+    public List<SKPoint[]> SelectionOutlines()
+    {
+        var outlines = new List<SKPoint[]>();
+        if (Project is not { } project) return outlines;
+
+        var preset = project.Sequence.Preset;
+        var frame = SKRect.Create(preset.Width, preset.Height);
+        var position = Position;
+        foreach (var clip in SelectedClips())
+        {
+            if (!clip.Range.Contains(position) || project.Sequence.TrackOf(clip) is not { Hidden: false }) continue;
+
+            if (clip is VisualClip visual)
+            {
+                // 예전에 가져와 크기가 기록되지 않은 원본은 시퀀스와 같은 크기로 본다.
+                var asset = project.FindAsset(visual.AssetId);
+                var size = asset is { Width: > 0, Height: > 0 } ? new SKSize(asset.Width, asset.Height) : new SKSize(preset.Width, preset.Height);
+                outlines.Add(SkiaCompositor.Corners(visual, size, frame, position));
+            }
+            else if (clip is TextualClip text && TextRenderer.Corners(text, frame, position) is { Length: 4 } corners)
+            {
+                outlines.Add(corners);
+            }
+        }
+
+        return outlines;
+    }
+
+    private string? _liveEditName; // 끄는 동안 마지막으로 한 편집의 이름
+
+    /// <summary>끄는 동안 속성 패널의 값으로 바꾼 것을 그 편집의 이름으로 기록한다.</summary>
+    public void CommitLiveEdit() => CommitLiveEdit(_liveEditName ?? "값 변경");
+
     public void CommitLiveEdit(string name)
     {
+        _liveEditName = null;
         if (Project is not { } project || _beforeLiveEdit is not { } before) return;
         _beforeLiveEdit = null;
 

@@ -52,11 +52,19 @@ public partial class MainWindow : Window
 
     private void OnResetLayoutClick(object sender, RoutedEventArgs e) => ApplyLayout(new NGL.Core.AppSettings());
 
+    private int _paintedVersion = -1;
     private bool _updatingScroll;
 
     private void OnRendering(object? sender, EventArgs e)
     {
         _viewModel.Tick();
+        // 선택이나 편집이 바뀌면 미리보기의 선택 테두리도 다시 그린다.
+        if (_viewModel.TimelineVersion != _paintedVersion)
+        {
+            _paintedVersion = _viewModel.TimelineVersion;
+            Preview.InvalidateVisual();
+        }
+
         Timeline.Refresh();
         Meter.Refresh();
 
@@ -331,7 +339,25 @@ public partial class MainWindow : Window
         canvas.Scale(target.Width / preset.Width);
         _viewModel.Render(canvas);
         if (_viewModel.ShowSafeArea) DrawSafeArea(canvas, preset.Width, preset.Height);
+        DrawSelection(canvas, preset.Width / target.Width);
         canvas.Restore();
+    }
+
+    /// <summary>선택한 클립에 파란 테두리와 귀퉁이 점을 그린다. pixel은 화면의 한 픽셀이 시퀀스에서 차지하는 길이.</summary>
+    private void DrawSelection(SKCanvas canvas, float pixel)
+    {
+        using var line = new SKPaint { Color = new SKColor(0x4C, 0x8D, 0xFF), Style = SKPaintStyle.Stroke, StrokeWidth = 2 * pixel, IsAntialias = true };
+        using var fill = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        foreach (var corners in _viewModel.SelectionOutlines())
+        {
+            for (var i = 0; i < 4; i++) canvas.DrawLine(corners[i], corners[(i + 1) % 4], line);
+            foreach (var corner in corners)
+            {
+                var handle = SKRect.Create(corner.X - 4 * pixel, corner.Y - 4 * pixel, 8 * pixel, 8 * pixel);
+                canvas.DrawRect(handle, fill);
+                canvas.DrawRect(handle, line);
+            }
+        }
     }
 
     /// <summary>가장자리에서 5%(동작 안전)와 10%(제목 안전) 안쪽에 선을 그린다. 기기에 따라 잘릴 수 있는 범위다.</summary>

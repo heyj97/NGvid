@@ -400,24 +400,31 @@
                             <TextBox x:Name="PositionXBox" DockPanel.Dock="Right" Width="56" Text="{Binding PositionX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
                             <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" ToolTip="화면 가운데에서 옮긴 거리. 미리보기에서 끌어도 됩니다." />
                         </DockPanel>
+                        <UniformGrid Columns="2" Margin="0,-4,0,10">
+                            <local:NumberSlider x:Name="PositionXSlider" Text="{Binding PositionX}" Minimum="-2000" Maximum="2000" TickFrequency="1" Margin="0,0,6,0" />
+                            <local:NumberSlider x:Name="PositionYSlider" Text="{Binding PositionY}" Minimum="-2000" Maximum="2000" TickFrequency="1" Margin="6,0,0,0" />
+                        </UniformGrid>
                         <DockPanel>
                             <Button x:Name="ScaleKeyButton" DockPanel.Dock="Right" Content="{Binding ScaleKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Scale"
                                     Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="ScaleBox" DockPanel.Dock="Right" Text="{Binding ScalePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="10~400. 미리보기에서 마우스 휠로도 바꿀 수 있습니다." />
                         </DockPanel>
+                        <local:NumberSlider x:Name="ScalePercentSlider" Text="{Binding ScalePercent}" Minimum="10" Maximum="400" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <Button x:Name="RotationKeyButton" DockPanel.Dock="Right" Content="{Binding RotationKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Rotation"
                                     Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="RotationBox" DockPanel.Dock="Right" Text="{Binding RotationDegrees, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="회전 (도)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="RotationDegreesSlider" Text="{Binding RotationDegrees}" Minimum="-180" Maximum="180" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <Button x:Name="OpacityKeyButton" DockPanel.Dock="Right" Content="{Binding OpacityKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Opacity"
                                     Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="OpacityBox" DockPanel.Dock="Right" Text="{Binding OpacityPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="불투명도 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="OpacityPercentSlider" Text="{Binding OpacityPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <ComboBox x:Name="BlendBox" DockPanel.Dock="Right" Width="110" ItemsSource="{x:Static local:MainViewModel.BlendNames}"
                                       SelectedIndex="{Binding BlendIndex}" Focusable="False" />
@@ -435,6 +442,12 @@
                             <TextBox x:Name="CropRightBox" Width="52" Margin="0,0,6,0" Text="{Binding CropRight, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBox x:Name="CropBottomBox" Width="52" Text="{Binding CropBottom, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                         </StackPanel>
+                        <UniformGrid Columns="2" Margin="0,-2,0,10">
+                            <local:NumberSlider x:Name="CropLeftSlider" Text="{Binding CropLeft}" Maximum="95" Margin="0,0,6,4" ToolTip="왼쪽" />
+                            <local:NumberSlider x:Name="CropTopSlider" Text="{Binding CropTop}" Maximum="95" Margin="6,0,0,4" ToolTip="위" />
+                            <local:NumberSlider x:Name="CropRightSlider" Text="{Binding CropRight}" Maximum="95" Margin="0,0,6,0" ToolTip="오른쪽" />
+                            <local:NumberSlider x:Name="CropBottomSlider" Text="{Binding CropBottom}" Maximum="95" Margin="6,0,0,0" ToolTip="아래" />
+                        </UniformGrid>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <CheckBox x:Name="FlipHorizontalBox" Content="좌우 뒤집기" IsChecked="{Binding FlipHorizontal}" Focusable="False" Margin="0,0,14,0" />
                             <CheckBox x:Name="FlipVerticalBox" Content="상하 뒤집기" IsChecked="{Binding FlipVertical}" Focusable="False" />
@@ -452,6 +465,7 @@
                             <TextBlock Text="시작" Style="{StaticResource Label}"
                                        ToolTip="앞 클립에서 이 클립으로 넘어올 때의 효과. 같은 트랙에서 바로 앞에 붙은 클립과 이어집니다." />
                         </DockPanel>
+                        <local:NumberSlider x:Name="TransitionSecondsSlider" Text="{Binding TransitionSeconds}" Minimum="0.1" Maximum="3" TickFrequency="0.1" Margin="0,-4,0,10" />
 
                         <Border Style="{StaticResource Divider}" />
                         <TextBlock Text="효과" Style="{StaticResource Title}" />
@@ -459,14 +473,17 @@
                             <TextBox x:Name="BlurBox" DockPanel.Dock="Right" Text="{Binding BlurAmount, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="흐림 (0~100)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="BlurAmountSlider" Text="{Binding BlurAmount}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="SharpenBox" DockPanel.Dock="Right" Text="{Binding SharpenPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="선명하게 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="SharpenPercentSlider" Text="{Binding SharpenPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="VignetteBox" DockPanel.Dock="Right" Text="{Binding VignettePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="비네팅 (%)" Style="{StaticResource Label}" ToolTip="가장자리를 어둡게 합니다" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="VignettePercentSlider" Text="{Binding VignettePercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
 
                         <Border Style="{StaticResource Divider}" />
                         <TextBlock Text="색보정" Style="{StaticResource Title}" ToolTip="-100~100, 0이 원래 그대로" />
@@ -474,22 +491,27 @@
                             <TextBox x:Name="ExposureBox" DockPanel.Dock="Right" Text="{Binding ExposureStops, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="노출 (-2~2)" Style="{StaticResource Label}" ToolTip="1마다 밝기가 두 배" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="ExposureStopsSlider" Text="{Binding ExposureStops}" Minimum="-2" Maximum="2" TickFrequency="0.1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="BrightnessBox" DockPanel.Dock="Right" Text="{Binding BrightnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="밝기 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="BrightnessPercentSlider" Text="{Binding BrightnessPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="ContrastBox" DockPanel.Dock="Right" Text="{Binding ContrastPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="대비 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="ContrastPercentSlider" Text="{Binding ContrastPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="SaturationBox" DockPanel.Dock="Right" Text="{Binding SaturationPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="채도 (%)" Style="{StaticResource Label}" ToolTip="-100이면 흑백" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="SaturationPercentSlider" Text="{Binding SaturationPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="TemperatureBox" DockPanel.Dock="Right" Text="{Binding TemperaturePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="색온도 (%)" Style="{StaticResource Label}" ToolTip="양수는 따뜻하게, 음수는 차갑게" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="TemperaturePercentSlider" Text="{Binding TemperaturePercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <Button x:Name="ClearLutButton" DockPanel.Dock="Right" Content="해제" Command="{Binding ClearLutCommand}" Margin="4,0,0,0" Padding="8,4" IsEnabled="{Binding HasLut}" />
                             <Button x:Name="ImportLutButton" DockPanel.Dock="Right" Content="불러오기" Click="OnImportLutClick" Margin="4,0,0,0" Padding="8,4" ToolTip=".cube 파일을 골라 색감을 적용합니다" />
@@ -510,10 +532,12 @@
                             <TextBox x:Name="KeyToleranceBox" DockPanel.Dock="Right" Text="{Binding KeyTolerancePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="허용 범위 (%)" Style="{StaticResource Label}" ToolTip="클수록 비슷한 색까지 지웁니다" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="KeyTolerancePercentSlider" Text="{Binding KeyTolerancePercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="KeySoftnessBox" DockPanel.Dock="Right" Text="{Binding KeySoftnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="가장자리 부드럽게 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="KeySoftnessPercentSlider" Text="{Binding KeySoftnessPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
 
                         <!-- 마스크 -->
                         <Border Style="{StaticResource Divider}" />
@@ -531,15 +555,24 @@
                                 <TextBox x:Name="MaskXBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskXPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="왼쪽에서부터 (%)" />
                                 <TextBlock Text="가운데 (%)" Style="{StaticResource Label}" ToolTip="클립 그림 안에서의 위치. 50, 50이 한가운데" />
                             </DockPanel>
+                            <UniformGrid Columns="2" Margin="0,-4,0,10">
+                                <local:NumberSlider x:Name="MaskXPercentSlider" Text="{Binding MaskXPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,0,6,0" />
+                                <local:NumberSlider x:Name="MaskYPercentSlider" Text="{Binding MaskYPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="6,0,0,0" />
+                            </UniformGrid>
                             <DockPanel>
                                 <TextBox x:Name="MaskHeightBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskHeightPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="높이 (%)" />
                                 <TextBox x:Name="MaskWidthBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskWidthPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="너비 (%)" />
                                 <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="사각형·원의 너비와 높이. 자유 도형에는 쓰이지 않습니다." />
                             </DockPanel>
+                            <UniformGrid Columns="2" Margin="0,-4,0,10">
+                                <local:NumberSlider x:Name="MaskWidthPercentSlider" Text="{Binding MaskWidthPercent}" Minimum="1" Maximum="200" TickFrequency="1" Margin="0,0,6,0" />
+                                <local:NumberSlider x:Name="MaskHeightPercentSlider" Text="{Binding MaskHeightPercent}" Minimum="1" Maximum="200" TickFrequency="1" Margin="6,0,0,0" />
+                            </UniformGrid>
                             <DockPanel>
                                 <TextBox x:Name="MaskFeatherBox" DockPanel.Dock="Right" Text="{Binding MaskFeather, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                                 <TextBlock Text="가장자리 흐림" Style="{StaticResource Label}" />
                             </DockPanel>
+                            <local:NumberSlider x:Name="MaskFeatherSlider" Text="{Binding MaskFeather}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                             <CheckBox x:Name="MaskInvertedBox" Content="반전 (도형 안쪽을 가림)" IsChecked="{Binding MaskInverted}" Focusable="False" Margin="0,0,0,8" />
                             <CheckBox x:Name="MaskEditingBox" Content="미리보기에서 마스크 편집" IsChecked="{Binding MaskEditing}" Focusable="False" Margin="0,0,0,8"
                                       ToolTip="켜면 미리보기에서 끌어서 마스크를 옮기고 휠로 크기를 바꿉니다. 자유 도형은 누른 곳에 점이 찍힙니다." />
@@ -566,6 +599,7 @@
                             <TextBox x:Name="TextSizeBox" DockPanel.Dock="Right" Text="{Binding TextSize, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="크기" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="TextSizeSlider" Text="{Binding TextSize}" Minimum="8" Maximum="300" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="TextColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding TextColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="글자 색" Style="{StaticResource Label}" ToolTip="#RRGGBB. 앞에 두 자리를 더 쓰면 투명도(#AARRGGBB)." />
@@ -575,11 +609,13 @@
                             <TextBox x:Name="OutlineColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding OutlineColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="외곽선" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="OutlineWidthSlider" Text="{Binding OutlineWidth}" Minimum="0" Maximum="40" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="ShadowOffsetBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding ShadowOffset, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="거리 (0이면 없음)" />
                             <TextBox x:Name="ShadowColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding ShadowColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="그림자" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="ShadowOffsetSlider" Text="{Binding ShadowOffset}" Minimum="0" Maximum="40" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="BoxColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding BoxColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="배경 박스" Style="{StaticResource Label}" ToolTip="색을 적으면 글자 뒤에 박스를 깝니다. 비우면 없음. 예: #CC000000" />
@@ -595,6 +631,10 @@
                             <TextBox x:Name="TextXBox" DockPanel.Dock="Right" Width="56" Text="{Binding TextX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
                             <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <UniformGrid Columns="2" Margin="0,-4,0,10">
+                            <local:NumberSlider x:Name="TextXSlider" Text="{Binding TextX}" Minimum="-2000" Maximum="2000" TickFrequency="1" Margin="0,0,6,0" />
+                            <local:NumberSlider x:Name="TextYSlider" Text="{Binding TextY}" Minimum="-2000" Maximum="2000" TickFrequency="1" Margin="6,0,0,0" />
+                        </UniformGrid>
                         <DockPanel>
                             <Button x:Name="ApplyStylePresetButton" DockPanel.Dock="Right" Content="적용" Command="{Binding ApplyStylePresetCommand}" Margin="4,0,0,0" Padding="8,4" />
                             <ComboBox x:Name="StylePresetBox" ItemsSource="{Binding StylePresetNames}" SelectedIndex="{Binding StylePresetIndex}" Focusable="False" />
@@ -617,6 +657,7 @@
                             <TextBlock Text="속도 (%)" Style="{StaticResource Label}"
                                        ToolTip="25~400. 클립의 길이가 속도에 맞게 바뀝니다(뒤 클립이 있으면 그 앞까지만). 소리의 음높이는 유지됩니다." />
                         </DockPanel>
+                        <local:NumberSlider x:Name="SpeedPercentSlider" Text="{Binding SpeedPercent}" Minimum="25" Maximum="400" TickFrequency="5" Margin="0,-4,0,10" />
                         <Button x:Name="FreezeFrameButton" Content="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" Margin="0"
                                 ToolTip="재생 위치의 화면을 이미지로 저장하고 그 자리에 2초짜리 정지 화면을 끼워 넣습니다" />
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
@@ -632,14 +673,17 @@
                             <TextBox x:Name="ClipVolumeBox" DockPanel.Dock="Right" Text="{Binding ClipVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="볼륨 (%)" Style="{StaticResource Label}" ToolTip="0~200. 선택한 오디오 클립 모두에 적용됩니다." />
                         </DockPanel>
+                        <local:NumberSlider x:Name="ClipVolumeSlider" Text="{Binding ClipVolume}" Minimum="0" Maximum="200" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="FadeInBox" DockPanel.Dock="Right" Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="페이드 인 (초)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="FadeInSlider" Text="{Binding FadeIn}" Minimum="0" Maximum="10" TickFrequency="0.1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <TextBox x:Name="FadeOutBox" DockPanel.Dock="Right" Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="페이드 아웃 (초)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="FadeOutSlider" Text="{Binding FadeOut}" Minimum="0" Maximum="10" TickFrequency="0.1" Margin="0,-4,0,10" />
                         <Button x:Name="ApplyToTrackButton" Content="이 트랙의 모든 클립에 적용" Command="{Binding ApplyToTrackCommand}" Margin="0,0,0,16"
                                 ToolTip="이 클립의 볼륨과 페이드를 같은 트랙의 모든 클립에 복사합니다" />
 
@@ -649,6 +693,7 @@
                             <TextBox x:Name="TrackVolumeBox" DockPanel.Dock="Right" Text="{Binding TrackVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="트랙 볼륨 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="TrackVolumeSlider" Text="{Binding TrackVolume}" Minimum="0" Maximum="200" TickFrequency="1" Margin="0,-4,0,10" />
                         <DockPanel>
                             <ComboBox x:Name="DuckBox" DockPanel.Dock="Right" Width="110" ItemsSource="{Binding DuckOptions}"
                                       SelectedIndex="{Binding DuckIndex}" Focusable="False" />
@@ -659,6 +704,7 @@
                             <TextBox x:Name="DuckLevelBox" DockPanel.Dock="Right" Text="{Binding DuckLevel, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="감쇠 중 볼륨 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <local:NumberSlider x:Name="DuckLevelSlider" Text="{Binding DuckLevel}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 

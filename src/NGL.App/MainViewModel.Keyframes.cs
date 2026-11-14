@@ -41,9 +41,10 @@ public partial class MainViewModel
     /// 패널에서 값을 고쳤을 때: 그 속성에 키프레임이 있는 클립은 재생 위치에 키프레임을 찍고,
     /// 없는 클립은 고정된 값을 바꾼다.
     /// </summary>
-    private void SetAnimated(string name, AnimatedProperty property, double value, Action<Clip, double> setFixed)
+    // T로 클립의 종류를 좁힌다: 영상과 텍스트를 함께 선택했을 때 영상의 값을 텍스트에 넣으려다 실패하지 않게.
+    private void SetAnimated<T>(string name, AnimatedProperty property, double value, Action<T, double> setFixed) where T : Clip
     {
-        var clips = SelectedClips().Where(clip => SequenceEdits.CanAnimate(clip, property)).ToList();
+        var clips = SelectedClips().OfType<T>().Where(clip => SequenceEdits.CanAnimate(clip, property)).ToList();
         Edit(name, () =>
         {
             foreach (var clip in clips)

@@ -201,18 +201,34 @@ public sealed class SkiaCompositor(Func<string, CubeLut?>? lutOf = null) : IFram
         var size = PlacedSize(
             (float)(imageSize.Width * (1 - clip.CropLeft - clip.CropRight)),
             (float)(imageSize.Height * (1 - clip.CropTop - clip.CropBottom)), frame, clip.Fit);
-        var scale = (float)Math.Clamp(clip.ValueAt(AnimatedProperty.Scale, clip.Scale, time), 0.1, 4);
+        if (!MatrixOf(clip, frame, time).TryInvert(out var inverse)) return new SKPoint(0.5f, 0.5f);
 
-        // Draw가 캔버스에 거는 변환(이동 → 회전 → 크기·뒤집기)과 같은 행렬을 만들어 거꾸로 적용한다.
+        var local = inverse.MapPoint(point);
+        return new SKPoint(local.X / size.Width + 0.5f, local.Y / size.Height + 0.5f);
+    }
+
+    /// <summary>
+    /// 클립 그림의 네 귀퉁이가 시퀀스의 어디에 놓이는지(왼쪽 위부터 시계 방향). 선택한 클립의 테두리를 그릴 때 쓴다.
+    /// imageSize는 원본의 화면 크기.
+    /// </summary>
+    public static SKPoint[] Corners(VisualClip clip, SKSize imageSize, SKRect frame, TimeSpan time)
+    {
+        var size = PlacedSize(
+            (float)(imageSize.Width * (1 - clip.CropLeft - clip.CropRight)),
+            (float)(imageSize.Height * (1 - clip.CropTop - clip.CropBottom)), frame, clip.Fit);
+        var (w, h) = (size.Width / 2, size.Height / 2);
+        return MatrixOf(clip, frame, time).MapPoints([new(-w, -h), new(w, -h), new(w, h), new(-w, h)]);
+    }
+
+    /// <summary>Draw가 캔버스에 거는 변환(이동 → 회전 → 크기·뒤집기)과 같은 행렬.</summary>
+    private static SKMatrix MatrixOf(VisualClip clip, SKRect frame, TimeSpan time)
+    {
+        var scale = (float)Math.Clamp(clip.ValueAt(AnimatedProperty.Scale, clip.Scale, time), 0.1, 4);
         var matrix = SKMatrix.CreateTranslation(
             frame.MidX + (float)clip.ValueAt(AnimatedProperty.X, clip.X, time),
             frame.MidY + (float)clip.ValueAt(AnimatedProperty.Y, clip.Y, time));
         matrix = SKMatrix.Concat(matrix, SKMatrix.CreateRotationDegrees((float)clip.ValueAt(AnimatedProperty.Rotation, clip.Rotation, time)));
-        matrix = SKMatrix.Concat(matrix, SKMatrix.CreateScale(scale * (clip.FlipHorizontal ? -1 : 1), scale * (clip.FlipVertical ? -1 : 1)));
-        if (!matrix.TryInvert(out var inverse)) return new SKPoint(0.5f, 0.5f);
-
-        var local = inverse.MapPoint(point);
-        return new SKPoint(local.X / size.Width + 0.5f, local.Y / size.Height + 0.5f);
+        return SKMatrix.Concat(matrix, SKMatrix.CreateScale(scale * (clip.FlipHorizontal ? -1 : 1), scale * (clip.FlipVertical ? -1 : 1)));
     }
 
     // ───── 효과와 색보정 ─────

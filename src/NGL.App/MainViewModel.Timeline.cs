@@ -42,6 +42,14 @@ public partial class MainViewModel
     {
         if (_engine is null || Project is null) return;
 
+        // 슬라이더를 끄는 중이면 화면에만 반영하고, 놓을 때 한 번의 편집으로 기록한다.
+        if (_beforeLiveEdit is not null)
+        {
+            _liveEditName = name;
+            LiveEdit(change);
+            return;
+        }
+
         var command = new SequenceEditCommand(name, Project.Sequence, change);
         _engine.Edit(command.Execute);
         if (!command.Changed) return;

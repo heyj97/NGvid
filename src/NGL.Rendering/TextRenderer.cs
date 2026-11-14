@@ -12,6 +12,26 @@ public static partial class TextRenderer
     [GeneratedRegex(@"\S+")]
     private static partial Regex Word();
 
+    /// <summary>글자가 차지하는 사각형의 네 귀퉁이가 시퀀스의 어디에 놓이는지(왼쪽 위부터 시계 방향). 문구가 비었으면 빈 배열.</summary>
+    public static SKPoint[] Corners(TextualClip clip, SKRect frame, TimeSpan time)
+    {
+        if (string.IsNullOrWhiteSpace(clip.Text)) return [];
+
+        // Draw와 같은 방식으로 크기를 재고 같은 변환(이동 → 회전 → 크기)을 건다.
+        var style = clip.Style;
+        using var font = new SKFont(TypefaceOf(style.Font, style.Bold), (float)style.Size);
+        var lines = clip.Text.Replace("\r", "").Split('\n');
+        var (w, h) = (lines.Max(line => font.MeasureText(line)) / 2, font.Spacing * lines.Length / 2);
+
+        var scale = (float)Math.Clamp(clip.ValueAt(AnimatedProperty.Scale, 1, time), 0.1, 4);
+        var matrix = SKMatrix.CreateTranslation(
+            frame.MidX + (float)clip.ValueAt(AnimatedProperty.X, style.X, time),
+            frame.MidY + (float)clip.ValueAt(AnimatedProperty.Y, style.Y, time));
+        matrix = SKMatrix.Concat(matrix, SKMatrix.CreateRotationDegrees((float)clip.ValueAt(AnimatedProperty.Rotation, 0, time)));
+        matrix = SKMatrix.Concat(matrix, SKMatrix.CreateScale(scale, scale));
+        return matrix.MapPoints([new(-w, -h), new(w, -h), new(w, h), new(-w, h)]);
+    }
+
     public static void Draw(SKCanvas canvas, TextualClip clip, SKRect frame, TimeSpan time)
     {
         if (string.IsNullOrWhiteSpace(clip.Text)) return;

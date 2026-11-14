@@ -33,7 +33,7 @@ public partial class MainViewModel
     public string ClipVolume
     {
         get => Percent(Shown(SelectedAudioClips().FirstOrDefault(), AnimatedProperty.Volume, SelectedAudioClips().FirstOrDefault()?.Volume));
-        set => SetNumber(value, 0, 200, number => SetAnimated("볼륨 변경", AnimatedProperty.Volume, number / 100, (clip, volume) => ((AudioClip)clip).Volume = volume));
+        set => SetNumber(value, 0, 200, number => SetAnimated("볼륨 변경", AnimatedProperty.Volume, number / 100, (AudioClip clip, double volume) => clip.Volume = volume));
     }
 
     /// <summary>페이드 인(초).</summary>

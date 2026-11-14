@@ -25,7 +25,7 @@ public partial class MainViewModel
     {
         get => Percent(Shown(FirstSpeedClip, AnimatedProperty.Speed, FirstSpeedClip?.Speed));
         set => SetNumber(value, MediaClip.MinSpeed * 100, MediaClip.MaxSpeed * 100, number => SetAnimated("속도 변경",
-            AnimatedProperty.Speed, number / 100, (clip, speed) => SequenceEdits.SetSpeed(Project!.Sequence, (MediaClip)clip, speed)));
+            AnimatedProperty.Speed, number / 100, (MediaClip clip, double speed) => SequenceEdits.SetSpeed(Project!.Sequence, clip, speed)));
     }
 
     public string SpeedKey => KeyMark(AnimatedProperty.Speed);

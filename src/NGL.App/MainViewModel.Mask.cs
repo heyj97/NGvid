@@ -66,25 +66,25 @@ public partial class MainViewModel
     public string MaskXPercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.MaskX, FirstMask?.X));
-        set => SetNumber(value, -200, 300, number => SetAnimated("마스크 위치 변경", AnimatedProperty.MaskX, number / 100, (clip, x) => ((VisualClip)clip).Mask.X = x));
+        set => SetNumber(value, -200, 300, number => SetAnimated("마스크 위치 변경", AnimatedProperty.MaskX, number / 100, (VisualClip clip, double x) => clip.Mask.X = x));
     }
 
     public string MaskYPercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.MaskY, FirstMask?.Y));
-        set => SetNumber(value, -200, 300, number => SetAnimated("마스크 위치 변경", AnimatedProperty.MaskY, number / 100, (clip, y) => ((VisualClip)clip).Mask.Y = y));
+        set => SetNumber(value, -200, 300, number => SetAnimated("마스크 위치 변경", AnimatedProperty.MaskY, number / 100, (VisualClip clip, double y) => clip.Mask.Y = y));
     }
 
     public string MaskWidthPercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.MaskWidth, FirstMask?.Width));
-        set => SetNumber(value, 1, 300, number => SetAnimated("마스크 크기 변경", AnimatedProperty.MaskWidth, number / 100, (clip, width) => ((VisualClip)clip).Mask.Width = width));
+        set => SetNumber(value, 1, 300, number => SetAnimated("마스크 크기 변경", AnimatedProperty.MaskWidth, number / 100, (VisualClip clip, double width) => clip.Mask.Width = width));
     }
 
     public string MaskHeightPercent
     {
         get => Percent(Shown(FirstVisual, AnimatedProperty.MaskHeight, FirstMask?.Height));
-        set => SetNumber(value, 1, 300, number => SetAnimated("마스크 크기 변경", AnimatedProperty.MaskHeight, number / 100, (clip, height) => ((VisualClip)clip).Mask.Height = height));
+        set => SetNumber(value, 1, 300, number => SetAnimated("마스크 크기 변경", AnimatedProperty.MaskHeight, number / 100, (VisualClip clip, double height) => clip.Mask.Height = height));
     }
 
     /// <summary>가장자리 흐림(픽셀).</summary>

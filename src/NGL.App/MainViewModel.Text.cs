@@ -139,13 +139,13 @@ public partial class MainViewModel
     public string TextX
     {
         get => Number(Shown(FirstText, AnimatedProperty.X, FirstText?.Style.X));
-        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.X, number, (clip, x) => ((TextualClip)clip).Style.X = x));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.X, number, (TextualClip clip, double x) => clip.Style.X = x));
     }
 
     public string TextY
     {
         get => Number(Shown(FirstText, AnimatedProperty.Y, FirstText?.Style.Y));
-        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (clip, y) => ((TextualClip)clip).Style.Y = y));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (TextualClip clip, double y) => clip.Style.Y = y));
     }
 
     /// <summary>말하는 단어를 강조하는 색. 비우면 강조하지 않는다.</summary>
