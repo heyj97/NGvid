@@ -1,0 +1,92 @@
+# .ngvid 프로젝트 형식 (version 1)
+
+NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
+
+```
+내프로젝트/
+  project.ngvid     ← 편집 정보 (JSON, UTF-8)
+  media/            ← 가져온 원본. 원래 파일명 그대로
+  proxy/            ← 프록시 사본. 지워도 다시 만들 수 있음
+```
+
+저장·읽기 코드는 `src/NGL.IO/ProjectSerializer.cs`, 데이터 모델은 `src/NGL.Core`에 있다.
+
+## 규칙
+
+- 속성 이름은 camelCase다.
+- 시간은 `"시:분:초.소수"` 문자열이다. 예: `"00:01:05.5000000"`은 1분 5.5초. 프레임 번호가 아니라 시간으로 적기 때문에 fps를 바꿔도 클립 위치가 변하지 않는다.
+- ID는 GUID 문자열이다. 클립은 `assetId`로 `assets`의 원본을 가리킨다.
+- 원본 경로(`relativePath`)는 프로젝트 폴더 기준 상대 경로이고 구분자는 `/`다.
+- 트랙과 클립은 `type`에 클래스 이름을 적어 종류를 구분한다.
+- `version`이 이 프로그램이 아는 값보다 크면 열지 않는다. 형식을 바꿀 때는 `version`을 올리고 `ProjectSerializer.Deserialize`에서 이전 형식을 변환한다.
+
+## 구조
+
+| 위치 | 속성 | 설명 |
+| --- | --- | --- |
+| 최상위 | `version` | 형식 버전. 현재 `1` |
+| | `name` | 프로젝트 이름 |
+| | `sequence` | 시퀀스 (프로젝트당 하나) |
+| | `assets` | 리소스 보관함의 원본 목록 |
+| `sequence` | `preset` | `name`, `width`, `height`. 16:9(1920×1080), 9:16(1080×1920), 1:1(1080×1080) |
+| | `frameRate` | `30` 또는 `60` |
+| | `tracks` | 트랙 목록. 배열 순서가 트랙 순서 |
+| 트랙 | `type` | `VideoTrack`, `AudioTrack`, `CaptionTrack` |
+| | `id`, `name`, `color` | 색상은 `#RRGGBB` |
+| | `clips` | 클립 목록 |
+| 클립 | `type` | 아래 표 참고 |
+| | `id` | |
+| | `range` | 타임라인에서 차지하는 구간. `start`, `duration` |
+| 원본 | `id`, `kind` | `kind`는 `Video`, `Audio`, `Image` |
+| | `name` | 보관함과 클립에 표시되는 이름 |
+| | `relativePath` | 예: `media/interview.mp4` |
+| | `duration` | 원본 길이. 이미지는 0 |
+
+### 클립 종류
+
+| `type` | 올릴 수 있는 트랙 | 추가 속성 |
+| --- | --- | --- |
+| `VideoClip` | `VideoTrack` | `assetId`, `sourceStart`(원본에서 재생을 시작하는 위치) |
+| `ImageClip` | `VideoTrack` | `assetId` |
+| `TextClip` | `VideoTrack` | `text` |
+| `AudioClip` | `AudioTrack` | `assetId`, `sourceStart` |
+| `CaptionClip` | `CaptionTrack` | `text` |
+
+## 예시
+
+```json
+{
+  "version": 1,
+  "name": "여행 브이로그 1편",
+  "sequence": {
+    "preset": { "name": "16:9", "width": 1920, "height": 1080 },
+    "frameRate": 30,
+    "tracks": [
+      {
+        "type": "VideoTrack",
+        "id": "0b0f6a3e-6f0e-4c0e-9a55-0d3c1f1f5a01",
+        "name": "영상 1",
+        "color": "#4C8DFF",
+        "clips": [
+          {
+            "type": "VideoClip",
+            "sourceStart": "00:00:05",
+            "assetId": "5d2d7c1a-9a3b-4a53-8f0e-2f6f0a7c9b02",
+            "id": "a3c1e2f4-1b2c-4d5e-8f90-1a2b3c4d5e03",
+            "range": { "start": "00:00:00", "duration": "00:00:10" }
+          }
+        ]
+      }
+    ]
+  },
+  "assets": [
+    {
+      "id": "5d2d7c1a-9a3b-4a53-8f0e-2f6f0a7c9b02",
+      "kind": "Video",
+      "name": "interview",
+      "relativePath": "media/interview.mp4",
+      "duration": "00:01:30"
+    }
+  ]
+}
+```
