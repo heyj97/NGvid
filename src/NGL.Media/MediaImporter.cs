@@ -34,6 +34,8 @@ public static class MediaImporter
             RelativePath = $"{ProjectPaths.MediaFolderName}/{Path.GetFileName(target)}",
             Duration = kind == MediaKind.Image ? TimeSpan.Zero : info.Duration,
             HasAudio = kind == MediaKind.Video && info.Audio is not null,
+            Width = info.Video?.Width ?? 0,
+            Height = info.Video?.Height ?? 0,
         };
     }
 

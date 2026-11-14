@@ -352,9 +352,12 @@ public static class SequenceEdits
     // ───── 애니메이션 프리셋 ─────
 
     /// <summary>그 종류의 클립에 키프레임을 찍을 수 있는 속성인가.</summary>
-    public static bool CanAnimate(Clip clip, AnimatedProperty property) => property == AnimatedProperty.Volume
-        ? clip is AudioClip
-        : clip is VisualClip or TextualClip;
+    public static bool CanAnimate(Clip clip, AnimatedProperty property) => property switch
+    {
+        AnimatedProperty.Volume => clip is AudioClip,
+        >= AnimatedProperty.MaskX => clip is VisualClip,
+        _ => clip is VisualClip or TextualClip,
+    };
 
     /// <summary>source의 글자 스타일을 같은 트랙의 모든 자막에 복사한다. 문구와 시간은 그대로다.</summary>
     public static bool ApplyStyleToTrack(Sequence sequence, TextualClip source)

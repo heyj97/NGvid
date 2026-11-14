@@ -132,6 +132,9 @@ public abstract class VisualClip : MediaClip
     /// <summary>효과와 색보정.</summary>
     public ClipEffects Effects { get; } = new();
 
+    /// <summary>일부만 보이게 하는 마스크.</summary>
+    public ClipMask Mask { get; } = new();
+
     /// <summary>앞 클립에서 이 클립으로 넘어올 때의 전환. 이 클립의 처음 TransitionDuration 동안 진행된다.</summary>
     public TransitionKind Transition { get; set; }
 

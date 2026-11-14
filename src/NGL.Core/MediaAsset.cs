@@ -24,4 +24,9 @@ public sealed class MediaAsset
 
     /// <summary>영상 원본에 소리가 들어 있는가.</summary>
     public bool HasAudio { get; set; }
+
+    /// <summary>화면에 보이는 크기(픽셀). 소리이거나 예전에 가져온 원본이면 0.</summary>
+    public int Width { get; set; }
+
+    public int Height { get; set; }
 }

@@ -31,6 +31,63 @@ public sealed class ClipEffects
 
     /// <summary>색감을 바꾸는 .cube LUT 파일. 프로젝트 폴더 기준 상대 경로(예: luts/film.cube). null이면 없다.</summary>
     public string? Lut { get; set; }
+
+    private double _keyTolerance = 0.3, _keySoftness = 0.1;
+
+    /// <summary>크로마키로 투명하게 만들 색(#RRGGBB). null이면 쓰지 않는다. 밝기는 무시하고 색상만 비교한다.</summary>
+    public string? KeyColor { get; set; }
+
+    /// <summary>크로마키 허용 범위(0~1). 클수록 비슷한 색까지 지운다.</summary>
+    public double KeyTolerance { get => _keyTolerance; set => _keyTolerance = Math.Clamp(value, 0, 1); }
+
+    /// <summary>크로마키 가장자리를 부드럽게 하는 정도(0~1). 허용 범위 바깥의 이만큼은 반투명해진다.</summary>
+    public double KeySoftness { get => _keySoftness; set => _keySoftness = Math.Clamp(value, 0, 1); }
+}
+
+public enum MaskShape
+{
+    None,
+    Rectangle,
+    Ellipse,
+
+    /// <summary>점들을 이은 자유 도형.</summary>
+    Polygon,
+}
+
+/// <summary>마스크 도형의 점. 클립 그림의 왼쪽 위가 (0, 0), 오른쪽 아래가 (1, 1)이다.</summary>
+public readonly record struct MaskPoint(double X, double Y);
+
+/// <summary>
+/// 클립의 일부만 보이게 하는 모양 틀. 위치와 크기는 클립 그림에 대한 비율이라서 클립을 옮기거나 키워도 함께 움직인다.
+/// </summary>
+public sealed class ClipMask
+{
+    private double _width = 0.5, _height = 0.5, _feather;
+
+    public MaskShape Shape { get; set; }
+
+    /// <summary>도형의 가운데(0~1). 자유 도형은 0.5에서 벗어난 만큼 통째로 옮겨진다.</summary>
+    public double X { get; set; } = 0.5;
+
+    public double Y { get; set; } = 0.5;
+
+    /// <summary>사각형·원의 너비(클립 너비에 대한 비율).</summary>
+    public double Width { get => _width; set => _width = Math.Clamp(value, 0.01, 3); }
+
+    public double Height { get => _height; set => _height = Math.Clamp(value, 0.01, 3); }
+
+    /// <summary>가장자리를 흐리게 하는 정도(시퀀스 픽셀, 0~300).</summary>
+    public double Feather { get => _feather; set => _feather = Math.Clamp(value, 0, 300); }
+
+    /// <summary>켜면 도형 안쪽을 가리고 바깥쪽을 보여준다.</summary>
+    public bool Inverted { get; set; }
+
+    /// <summary>자유 도형의 점들. 세 개 이상이어야 그려진다.</summary>
+    public List<MaskPoint> Points { get; } = [];
+
+    /// <summary>지금 화면에 적용되는 마스크인가.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsActive => Shape is MaskShape.Rectangle or MaskShape.Ellipse || (Shape == MaskShape.Polygon && Points.Count >= 3);
 }
 
 /// <summary>3D LUT(색 변환표). Rgb에는 빨강이 가장 빨리 바뀌는 순서로 Size³개의 색(R, G, B 0~1)이 들어 있다.</summary>

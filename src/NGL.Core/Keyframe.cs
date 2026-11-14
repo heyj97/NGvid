@@ -9,6 +9,12 @@ public enum AnimatedProperty
     Rotation,
     Opacity,
     Volume,
+
+    // 마스크의 가운데와 크기
+    MaskX,
+    MaskY,
+    MaskWidth,
+    MaskHeight,
 }
 
 /// <summary>키프레임 사이에서 값이 변하는 속도 곡선.</summary>

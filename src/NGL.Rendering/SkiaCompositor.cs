@@ -109,8 +109,6 @@ public sealed class SkiaCompositor(Func<string, CubeLut?>? lutOf = null) : IFram
         using var colorFilter = ColorFilterOf(clip.Effects);
         using var imageFilter = ImageFilterOf(clip.Effects);
         _layer.Color = SKColors.White.WithAlpha((byte)Math.Round(opacity * 255));
-        _layer.ColorFilter = colorFilter;
-        _layer.ImageFilter = imageFilter;
         _layer.BlendMode = clip.Blend switch
         {
             BlendMode.Multiply => SKBlendMode.Multiply,
@@ -119,12 +117,102 @@ public sealed class SkiaCompositor(Func<string, CubeLut?>? lutOf = null) : IFram
             BlendMode.Add => SKBlendMode.Plus,
             _ => SKBlendMode.SrcOver,
         };
-        canvas.DrawImage(image, source, target, Sampling, _layer);
-        _layer.ColorFilter = null;
-        _layer.ImageFilter = null;
 
-        if (clip.Effects.Vignette > 0) DrawVignette(canvas, target, clip.Effects.Vignette * opacity);
+        if (clip.Mask.IsActive)
+        {
+            // 마스크: 따로 한 겹에 그림을 그려 도형 모양으로 오려낸 뒤, 그 겹을 불투명도·블렌드로 아래 화면과 합친다.
+            canvas.SaveLayer(_layer);
+            _inner.ColorFilter = colorFilter;
+            _inner.ImageFilter = imageFilter;
+            canvas.DrawImage(image, source, target, Sampling, _inner);
+            _inner.ColorFilter = null;
+            _inner.ImageFilter = null;
+            if (clip.Effects.Vignette > 0) DrawVignette(canvas, target, clip.Effects.Vignette);
+            DrawMask(canvas, clip, target, time);
+            canvas.Restore();
+        }
+        else
+        {
+            _layer.ColorFilter = colorFilter;
+            _layer.ImageFilter = imageFilter;
+            canvas.DrawImage(image, source, target, Sampling, _layer);
+            _layer.ColorFilter = null;
+            _layer.ImageFilter = null;
+            if (clip.Effects.Vignette > 0) DrawVignette(canvas, target, clip.Effects.Vignette * opacity);
+        }
+
         canvas.Restore();
+    }
+
+    private readonly SKPaint _inner = new();
+
+    /// <summary>
+    /// 지금 겹에 그려진 그림에서 마스크 도형의 안쪽(반전이면 바깥쪽)만 남긴다.
+    /// 도형의 위치·크기는 클립 그림(target)에 대한 비율이고, 키프레임이 있으면 이 시각의 값을 쓴다.
+    /// </summary>
+    private static void DrawMask(SKCanvas canvas, VisualClip clip, SKRect target, TimeSpan time)
+    {
+        var mask = clip.Mask;
+        var x = clip.ValueAt(AnimatedProperty.MaskX, mask.X, time);
+        var y = clip.ValueAt(AnimatedProperty.MaskY, mask.Y, time);
+        var width = Math.Max(0.001, clip.ValueAt(AnimatedProperty.MaskWidth, mask.Width, time)) * target.Width;
+        var height = Math.Max(0.001, clip.ValueAt(AnimatedProperty.MaskHeight, mask.Height, time)) * target.Height;
+        var center = new SKPoint(target.Left + (float)x * target.Width, target.Top + (float)y * target.Height);
+        var bounds = SKRect.Create(center.X - (float)width / 2, center.Y - (float)height / 2, (float)width, (float)height);
+
+        // 도형을 따로 한 겹에 그리고, 그 겹을 합칠 때 "도형이 있는 곳만 남기기"(반전이면 "지우기")로 합친다.
+        // 이렇게 해야 도형 바깥도 함께 처리된다.
+        using var combine = new SKPaint { BlendMode = mask.Inverted ? SKBlendMode.DstOut : SKBlendMode.DstIn };
+        canvas.SaveLayer(combine);
+        using var blur = mask.Feather > 0 ? SKMaskFilter.CreateBlur(SKBlurStyle.Normal, (float)mask.Feather / 2) : null;
+        using var paint = new SKPaint { Color = SKColors.White, IsAntialias = true, MaskFilter = blur };
+        switch (mask.Shape)
+        {
+            case MaskShape.Rectangle:
+                canvas.DrawRect(bounds, paint);
+                break;
+            case MaskShape.Ellipse:
+                canvas.DrawOval(bounds, paint);
+                break;
+            default:
+                using (var builder = new SKPathBuilder())
+                {
+                    // 자유 도형은 가운데가 0.5에서 벗어난 만큼 통째로 옮긴다.
+                    var points = mask.Points.Select(point => new SKPoint(
+                        target.Left + (float)(point.X + x - 0.5) * target.Width,
+                        target.Top + (float)(point.Y + y - 0.5) * target.Height)).ToArray();
+                    builder.AddPoly(points, true);
+                    using var path = builder.Detach();
+                    canvas.DrawPath(path, paint);
+                }
+
+                break;
+        }
+
+        canvas.Restore();
+    }
+
+    /// <summary>
+    /// 시퀀스의 한 점이 클립 그림의 어디인지 돌려준다: 그림의 왼쪽 위가 (0, 0), 오른쪽 아래가 (1, 1).
+    /// 미리보기에서 누른 곳을 마스크 좌표로 바꿀 때 쓴다. imageSize는 원본의 화면 크기.
+    /// </summary>
+    public static SKPoint ToClipSpace(VisualClip clip, SKSize imageSize, SKRect frame, TimeSpan time, SKPoint point)
+    {
+        var size = PlacedSize(
+            (float)(imageSize.Width * (1 - clip.CropLeft - clip.CropRight)),
+            (float)(imageSize.Height * (1 - clip.CropTop - clip.CropBottom)), frame, clip.Fit);
+        var scale = (float)Math.Clamp(clip.ValueAt(AnimatedProperty.Scale, clip.Scale, time), 0.1, 4);
+
+        // Draw가 캔버스에 거는 변환(이동 → 회전 → 크기·뒤집기)과 같은 행렬을 만들어 거꾸로 적용한다.
+        var matrix = SKMatrix.CreateTranslation(
+            frame.MidX + (float)clip.ValueAt(AnimatedProperty.X, clip.X, time),
+            frame.MidY + (float)clip.ValueAt(AnimatedProperty.Y, clip.Y, time));
+        matrix = SKMatrix.Concat(matrix, SKMatrix.CreateRotationDegrees((float)clip.ValueAt(AnimatedProperty.Rotation, clip.Rotation, time)));
+        matrix = SKMatrix.Concat(matrix, SKMatrix.CreateScale(scale * (clip.FlipHorizontal ? -1 : 1), scale * (clip.FlipVertical ? -1 : 1)));
+        if (!matrix.TryInvert(out var inverse)) return new SKPoint(0.5f, 0.5f);
+
+        var local = inverse.MapPoint(point);
+        return new SKPoint(local.X / size.Width + 0.5f, local.Y / size.Height + 0.5f);
     }
 
     // ───── 효과와 색보정 ─────
@@ -157,17 +245,59 @@ public sealed class SkiaCompositor(Func<string, CubeLut?>? lutOf = null) : IFram
     /// <summary>노출·색온도·밝기·대비·채도를 하나의 색 행렬로 만들고, LUT가 있으면 그 뒤에 적용한다. 아무것도 없으면 null.</summary>
     private SKColorFilter? ColorFilterOf(ClipEffects effects)
     {
-        SKColorFilter? matrix = null;
+        // 적용 순서: 크로마키(원래 색으로 판단) → 색보정 → LUT
+        SKColorFilter? result = null;
+        void Then(SKColorFilter? next)
+        {
+            if (next is null || result is null)
+            {
+                result ??= next;
+                return;
+            }
+
+            var both = SKColorFilter.CreateCompose(next, result);
+            next.Dispose();
+            result.Dispose();
+            result = both;
+        }
+
+        Then(ChromaKeyFilter(effects));
         if (effects.Exposure != 0 || effects.Temperature != 0 || effects.Brightness != 0 || effects.Contrast != 0 || effects.Saturation != 0)
-            matrix = SKColorFilter.CreateColorMatrix(ColorMatrix(effects));
+            Then(SKColorFilter.CreateColorMatrix(ColorMatrix(effects)));
+        if (effects.Lut is { } path && lutOf?.Invoke(path) is { } lut) Then(LutFilter(lut));
+        return result;
+    }
 
-        if (effects.Lut is not { } path || lutOf?.Invoke(path) is not { } lut || LutFilter(lut) is not { } lutFilter) return matrix;
-        if (matrix is null) return lutFilter;
+    // 색에서 밝기를 뺀 색상 성분(Cb, Cr)만 비교한다. 조명 때문에 배경의 밝기가 고르지 않아도 같은 색으로 본다.
+    // 지정한 색과의 거리가 tolerance 안이면 투명, tolerance + softness부터는 그대로, 그 사이는 반투명이다.
+    private const string ChromaKeyShader = """
+        uniform half3 key;
+        uniform half tolerance;
+        uniform half softness;
+        half2 chroma(half3 c) {
+            return half2(dot(c, half3(-0.169, -0.331, 0.5)), dot(c, half3(0.5, -0.419, -0.081)));
+        }
+        half4 main(half4 color) {
+            half3 c = color.a > 0 ? color.rgb / color.a : half3(0);
+            half keep = smoothstep(tolerance, tolerance + softness + 0.0001, distance(chroma(c), chroma(key)));
+            return half4(c * color.a * keep, color.a * keep);
+        }
+        """;
 
-        var both = SKColorFilter.CreateCompose(lutFilter, matrix);
-        lutFilter.Dispose();
-        matrix.Dispose();
-        return both;
+    private static readonly Lazy<SKRuntimeEffect?> ChromaKeyEffect = new(() => SKRuntimeEffect.CreateColorFilter(ChromaKeyShader, out _));
+
+    private static SKColorFilter? ChromaKeyFilter(ClipEffects effects)
+    {
+        if (TextRenderer.ColorOf(effects.KeyColor) is not { } key || ChromaKeyEffect.Value is not { } effect) return null;
+
+        // 색상 성분의 거리는 가장 멀어도 1 안팎이라서 0~1의 설정값을 절반으로 줄여 쓴다.
+        var uniforms = new SKRuntimeEffectUniforms(effect)
+        {
+            ["key"] = new[] { key.Red / 255f, key.Green / 255f, key.Blue / 255f },
+            ["tolerance"] = (float)effects.KeyTolerance / 2,
+            ["softness"] = (float)effects.KeySoftness / 2,
+        };
+        return effect.ToColorFilter(uniforms);
     }
 
     /// <summary>
