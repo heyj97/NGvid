@@ -132,6 +132,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="260" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="0,0,1,0">
@@ -216,6 +217,75 @@
             </Border>
 
             <skia:SKGLElement Grid.Column="1" x:Name="Preview" PaintSurface="OnPaintSurface" />
+
+            <!-- 속성 패널: 선택한 오디오 클립과 그 트랙. 값은 Enter나 다른 곳 클릭으로 확정한다. -->
+            <Border Grid.Column="2" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="1,0,0,0" Padding="14,12">
+                <Border.Resources>
+                    <Style TargetType="TextBox">
+                        <Setter Property="Background" Value="#1F2126" />
+                        <Setter Property="Foreground" Value="#E6E7EA" />
+                        <Setter Property="BorderBrush" Value="#33363D" />
+                        <Setter Property="CaretBrush" Value="#E6E7EA" />
+                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="Width" Value="70" />
+                        <Setter Property="HorizontalAlignment" Value="Right" />
+                    </Style>
+                    <Style x:Key="Label" TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#A7ACB4" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+                    <Style TargetType="DockPanel">
+                        <Setter Property="Margin" Value="0,0,0,8" />
+                    </Style>
+                </Border.Resources>
+                <Grid>
+                    <TextBlock Text="오디오 클립을 선택하면 볼륨·페이드·자동 감쇠를 설정할 수 있습니다." Foreground="#8E949C" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasAudioSelection}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <StackPanel x:Name="Inspector" Visibility="{Binding HasAudioSelection, Converter={StaticResource Visible}}">
+                        <TextBlock x:Name="InspectorTitle" Text="{Binding InspectorTitle}" FontWeight="Medium" Margin="0,0,0,12" />
+
+                        <DockPanel>
+                            <TextBox x:Name="ClipVolumeBox" DockPanel.Dock="Right" Text="{Binding ClipVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="볼륨 (%)" Style="{StaticResource Label}" ToolTip="0~200. 선택한 오디오 클립 모두에 적용됩니다." />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="FadeInBox" DockPanel.Dock="Right" Text="{Binding FadeIn, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="페이드 인 (초)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="FadeOutBox" DockPanel.Dock="Right" Text="{Binding FadeOut, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="페이드 아웃 (초)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <Button x:Name="ApplyToTrackButton" Content="이 트랙의 모든 클립에 적용" Command="{Binding ApplyToTrackCommand}" Margin="0,0,0,16"
+                                ToolTip="이 클립의 볼륨과 페이드를 같은 트랙의 모든 클립에 복사합니다" />
+
+                        <TextBlock Text="트랙" FontWeight="Medium" Margin="0,0,0,12" />
+                        <DockPanel>
+                            <TextBox x:Name="TrackVolumeBox" DockPanel.Dock="Right" Text="{Binding TrackVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="트랙 볼륨 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <ComboBox x:Name="DuckBox" DockPanel.Dock="Right" Width="110" ItemsSource="{Binding DuckOptions}"
+                                      SelectedIndex="{Binding DuckIndex}" Focusable="False" />
+                            <TextBlock Text="자동 감쇠 기준" Style="{StaticResource Label}"
+                                       ToolTip="고른 트랙(예: 내레이션)에 클립이 있는 동안 이 트랙(예: BGM)의 소리를 줄입니다" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="DuckLevelBox" DockPanel.Dock="Right" Text="{Binding DuckLevel, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="감쇠 중 볼륨 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- 프로젝트가 없을 때 -->
@@ -246,6 +316,8 @@
                     <Button Content="1프레임 ▶" Command="{Binding StepCommand}" CommandParameter="1" ToolTip="→ 키" />
                 </StackPanel>
 
+                <local:AudioMeterView x:Name="Meter" DockPanel.Dock="Right" Width="110" Height="14" Margin="12,0,0,0"
+                                      VerticalAlignment="Center" ToolTip="재생 중인 소리의 좌·우 크기. 빨간색이면 소리가 찢어집니다." />
                 <TextBlock x:Name="TimeLabel" DockPanel.Dock="Right" Text="{Binding TimeText}" Margin="10,0,0,0"
                            VerticalAlignment="Center" FontFamily="Consolas" />
 

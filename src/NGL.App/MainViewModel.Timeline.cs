@@ -75,6 +75,7 @@ public partial class MainViewModel
         Save();
         OnPropertyChanged(nameof(UndoText));
         OnPropertyChanged(nameof(RedoText));
+        RefreshInspector();
     }
 
     /// <summary>트랙 머리를 시퀀스와 맞춘다. 트랙이 그대로면 값만 다시 읽게 하고, 달라졌으면 새로 만든다.</summary>

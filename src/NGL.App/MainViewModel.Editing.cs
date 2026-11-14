@@ -41,6 +41,7 @@ public partial class MainViewModel
         }
 
         TimelineVersion++;
+        RefreshInspector();
     }
 
     [RelayCommand]
@@ -49,6 +50,7 @@ public partial class MainViewModel
         _selection.Clear();
         _selection.UnionWith(AllClips.Select(clip => clip.Id));
         TimelineVersion++;
+        RefreshInspector();
     }
 
     /// <summary>편집으로 사라진 클립을 선택에서 뺀다.</summary>
@@ -108,6 +110,7 @@ public partial class MainViewModel
         _selection.Clear();
         _selection.UnionWith(pasted.Select(clip => clip.Id));
         TimelineVersion++;
+        RefreshInspector();
     }
 
     /// <summary>선택한 클립들을 anchor가 newStart에 오도록 옮긴다. track은 anchor를 옮겨 놓을 트랙.</summary>

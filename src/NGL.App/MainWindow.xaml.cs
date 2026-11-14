@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     {
         _viewModel.Tick();
         Timeline.Refresh();
+        Meter.Refresh();
 
         // 가로 스크롤 막대를 타임라인의 보이는 구간에 맞춘다. 끝에 화면 절반만큼 여유를 둔다.
         var viewport = Timeline.ViewportSeconds;
