@@ -114,6 +114,7 @@ public partial class MainViewModel
         foreach (var property in VisualProperties) OnPropertyChanged(property);
         foreach (var property in KeyframeProperties) OnPropertyChanged(property);
         foreach (var property in TextProperties) OnPropertyChanged(property);
+        foreach (var property in EffectProperties) OnPropertyChanged(property);
     }
 
     /// <summary>재생 중인 소리의 좌·우 크기. 읽으면 다시 0부터 잰다.</summary>

@@ -312,6 +312,60 @@
                         </StackPanel>
                         <Button x:Name="ResetTransformButton" Content="변형 초기화" Command="{Binding ResetTransformCommand}" Margin="0"
                                 ToolTip="위치·크기·회전·자르기·뒤집기를 처음 상태로 되돌립니다" />
+
+                        <!-- 전환, 효과, 색보정 -->
+                        <TextBlock Text="전환" FontWeight="Medium" Margin="0,16,0,12" />
+                        <DockPanel>
+                            <TextBox x:Name="TransitionSecondsBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding TransitionSeconds, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="길이 (초)" />
+                            <ComboBox x:Name="TransitionBox" DockPanel.Dock="Right" Width="130" ItemsSource="{x:Static local:MainViewModel.TransitionNames}"
+                                      SelectedIndex="{Binding TransitionIndex}" Focusable="False" />
+                            <TextBlock Text="시작" Style="{StaticResource Label}"
+                                       ToolTip="앞 클립에서 이 클립으로 넘어올 때의 효과. 같은 트랙에서 바로 앞에 붙은 클립과 이어집니다." />
+                        </DockPanel>
+
+                        <TextBlock Text="효과" FontWeight="Medium" Margin="0,8,0,12" />
+                        <DockPanel>
+                            <TextBox x:Name="BlurBox" DockPanel.Dock="Right" Text="{Binding BlurAmount, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="흐림 (0~100)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="SharpenBox" DockPanel.Dock="Right" Text="{Binding SharpenPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="선명하게 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="VignetteBox" DockPanel.Dock="Right" Text="{Binding VignettePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="비네팅 (%)" Style="{StaticResource Label}" ToolTip="가장자리를 어둡게 합니다" />
+                        </DockPanel>
+
+                        <TextBlock Text="색보정" FontWeight="Medium" Margin="0,8,0,12" ToolTip="-100~100, 0이 원래 그대로" />
+                        <DockPanel>
+                            <TextBox x:Name="ExposureBox" DockPanel.Dock="Right" Text="{Binding ExposureStops, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="노출 (-2~2)" Style="{StaticResource Label}" ToolTip="1마다 밝기가 두 배" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="BrightnessBox" DockPanel.Dock="Right" Text="{Binding BrightnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="밝기 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="ContrastBox" DockPanel.Dock="Right" Text="{Binding ContrastPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="대비 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="SaturationBox" DockPanel.Dock="Right" Text="{Binding SaturationPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="채도 (%)" Style="{StaticResource Label}" ToolTip="-100이면 흑백" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="TemperatureBox" DockPanel.Dock="Right" Text="{Binding TemperaturePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="색온도 (%)" Style="{StaticResource Label}" ToolTip="양수는 따뜻하게, 음수는 차갑게" />
+                        </DockPanel>
+                        <DockPanel>
+                            <Button x:Name="ClearLutButton" DockPanel.Dock="Right" Content="해제" Command="{Binding ClearLutCommand}" Margin="4,0,0,0" Padding="8,4" IsEnabled="{Binding HasLut}" />
+                            <Button x:Name="ImportLutButton" DockPanel.Dock="Right" Content="불러오기" Click="OnImportLutClick" Margin="4,0,0,0" Padding="8,4" ToolTip=".cube 파일을 골라 색감을 적용합니다" />
+                            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                <Run Text="LUT  " Foreground="#A7ACB4" /><Run x:Name="LutNameRun" Text="{Binding LutName, Mode=OneWay}" />
+                            </TextBlock>
+                        </DockPanel>
+                        <Button x:Name="ResetEffectsButton" Content="효과·색보정 초기화" Command="{Binding ResetEffectsCommand}" Margin="0" />
                     </StackPanel>
 
                     <!-- 텍스트·자막 -->

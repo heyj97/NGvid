@@ -146,7 +146,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var position = _engine?.Position ?? TimeSpan.Zero;
         _engine?.Dispose();
         _engine = new PlaybackEngine(project.Sequence,
-            id => project.FindAsset(id) is { } asset ? ProjectPaths.AssetFile(folder, asset) : null, _output);
+            id => project.FindAsset(id) is { } asset ? ProjectPaths.AssetFile(folder, asset) : null, _output,
+            CubeLutParser.LoaderFor(folder));
         _engine.Quality = Quality;
         _engine.FrameReady += () => RenderRequested?.Invoke();
         _engine.Seek(position);

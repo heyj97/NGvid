@@ -102,6 +102,12 @@ public partial class MainWindow : Window
         _viewModel.DeleteTrack(item.Track);
     }
 
+    private void OnImportLutClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog { Title = "LUT 불러오기", Filter = "LUT 파일|*.cube|모든 파일|*.*" };
+        if (dialog.ShowDialog(this) == true) _viewModel.ImportLut(dialog.FileName);
+    }
+
     private void OnSaveStylePresetClick(object sender, RoutedEventArgs e)
     {
         if (PromptWindow.Ask(this, "스타일 프리셋 이름", "내 스타일") is { } name) _viewModel.SaveStylePreset(name);

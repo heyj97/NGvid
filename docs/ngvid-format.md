@@ -6,6 +6,7 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 내프로젝트/
   project.ngvid     ← 편집 정보 (JSON, UTF-8)
   media/            ← 가져온 원본. 원래 파일명 그대로
+  luts/             ← 가져온 LUT(.cube) 파일
   proxy/            ← 프록시 사본. 지워도 다시 만들 수 있음
 ```
 
@@ -62,6 +63,9 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 변형 속성(영상·이미지 클립): `x`, `y`(화면 가운데에서 옮긴 픽셀), `scale`(0.1~4), `rotation`(시계 방향, 도), `opacity`(0~1),
 `blend`(`Normal`·`Multiply`·`Screen`·`Overlay`·`Add`), `fit`(`Fit`·`Fill`), `cropLeft`·`cropTop`·`cropRight`·`cropBottom`(0~0.95),
 `flipHorizontal`, `flipVertical`.
+
+영상·이미지 클립에는 효과(`effects`: `blur` 0~100, `sharpen`·`vignette` 0~1, `brightness`·`contrast`·`saturation`·`temperature` -1~1,
+`exposure` -2~2, `lut` 프로젝트 폴더 기준 .cube 경로)와 전환(`transition`: `None`·`Dissolve`·`DipToBlack`·`Wipe`, `transitionDuration`)이 더 있다.
 
 글자 스타일(`style`): `font`, `size`(픽셀), `bold`, `color`, `outlineColor`, `outlineWidth`, `shadowColor`, `shadowOffset`,
 `boxColor`(없으면 적지 않음), `x`, `y`(화면 가운데에서 옮긴 픽셀), `highlightColor`(단어 강조 색, 없으면 적지 않음).
