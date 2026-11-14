@@ -32,8 +32,8 @@ public partial class MainViewModel
     /// <summary>클립 볼륨(%).</summary>
     public string ClipVolume
     {
-        get => Percent(SelectedAudioClips().FirstOrDefault()?.Volume);
-        set => SetNumber(value, 0, 200, number => EditAudio("볼륨 변경", clip => clip.Volume = number / 100));
+        get => Percent(Shown(SelectedAudioClips().FirstOrDefault(), AnimatedProperty.Volume, SelectedAudioClips().FirstOrDefault()?.Volume));
+        set => SetNumber(value, 0, 200, number => SetAnimated("볼륨 변경", AnimatedProperty.Volume, number / 100, (clip, volume) => ((AudioClip)clip).Volume = volume));
     }
 
     /// <summary>페이드 인(초).</summary>
@@ -112,6 +112,7 @@ public partial class MainViewModel
     {
         foreach (var property in InspectorProperties) OnPropertyChanged(property);
         foreach (var property in VisualProperties) OnPropertyChanged(property);
+        foreach (var property in KeyframeProperties) OnPropertyChanged(property);
     }
 
     /// <summary>재생 중인 소리의 좌·우 크기. 읽으면 다시 0부터 잰다.</summary>

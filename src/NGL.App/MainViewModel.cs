@@ -112,6 +112,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         RebuildEngine();
         RefreshLibrary();
         _history.Clear();
+        RefreshPresets();
         _history.Limit = NGL.IO.AppSettingsStore.Load().UndoLimit;
         _selection.Clear();
         _clipboard = [];
@@ -338,6 +339,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         IsPlaying = _engine.IsPlaying;
         TimeText = $"{Timecode(Project.Sequence, position)} / {Timecode(Project.Sequence, Project.Sequence.Duration)}";
+        FollowAnimation();
     }
 
     // 사용자가 슬라이더를 움직였을 때

@@ -102,6 +102,11 @@ public partial class MainWindow : Window
         _viewModel.DeleteTrack(item.Track);
     }
 
+    private void OnSavePresetClick(object sender, RoutedEventArgs e)
+    {
+        if (PromptWindow.Ask(this, "프리셋 이름", "내 움직임") is { } name) _viewModel.SavePreset(name);
+    }
+
     private void OnMarkerRename(Marker marker)
     {
         if (PromptWindow.Ask(this, "마커 이름", marker.Name) is { } name) _viewModel.RenameMarker(marker, name);

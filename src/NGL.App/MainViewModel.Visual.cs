@@ -30,36 +30,36 @@ public partial class MainViewModel
     /// <summary>화면 가운데에서 오른쪽으로 옮긴 거리(픽셀).</summary>
     public string PositionX
     {
-        get => Number(FirstVisual?.X);
-        set => SetNumber(value, -10000, 10000, number => EditVisual("위치 변경", clip => clip.X = number));
+        get => Number(Shown(FirstVisual, AnimatedProperty.X, FirstVisual?.X));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.X, number, (clip, x) => ((VisualClip)clip).X = x));
     }
 
     /// <summary>화면 가운데에서 아래로 옮긴 거리(픽셀).</summary>
     public string PositionY
     {
-        get => Number(FirstVisual?.Y);
-        set => SetNumber(value, -10000, 10000, number => EditVisual("위치 변경", clip => clip.Y = number));
+        get => Number(Shown(FirstVisual, AnimatedProperty.Y, FirstVisual?.Y));
+        set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (clip, y) => ((VisualClip)clip).Y = y));
     }
 
     /// <summary>크기(%). 10~400.</summary>
     public string ScalePercent
     {
-        get => Percent(FirstVisual?.Scale);
-        set => SetNumber(value, 10, 400, number => EditVisual("크기 변경", clip => clip.Scale = number / 100));
+        get => Percent(Shown(FirstVisual, AnimatedProperty.Scale, FirstVisual?.Scale));
+        set => SetNumber(value, 10, 400, number => SetAnimated("크기 변경", AnimatedProperty.Scale, number / 100, (clip, scale) => ((VisualClip)clip).Scale = scale));
     }
 
     /// <summary>시계 방향 회전(도).</summary>
     public string RotationDegrees
     {
-        get => Number(FirstVisual?.Rotation);
-        set => SetNumber(value, -3600, 3600, number => EditVisual("회전 변경", clip => clip.Rotation = number));
+        get => Number(Shown(FirstVisual, AnimatedProperty.Rotation, FirstVisual?.Rotation));
+        set => SetNumber(value, -3600, 3600, number => SetAnimated("회전 변경", AnimatedProperty.Rotation, number, (clip, rotation) => ((VisualClip)clip).Rotation = rotation));
     }
 
     /// <summary>불투명도(%).</summary>
     public string OpacityPercent
     {
-        get => Percent(FirstVisual?.Opacity);
-        set => SetNumber(value, 0, 100, number => EditVisual("불투명도 변경", clip => clip.Opacity = number / 100));
+        get => Percent(Shown(FirstVisual, AnimatedProperty.Opacity, FirstVisual?.Opacity));
+        set => SetNumber(value, 0, 100, number => SetAnimated("불투명도 변경", AnimatedProperty.Opacity, number / 100, (clip, opacity) => ((VisualClip)clip).Opacity = opacity));
     }
 
     public static IReadOnlyList<string> BlendNames { get; } = ["일반", "곱하기", "스크린", "오버레이", "더하기"];
@@ -198,5 +198,6 @@ public partial class MainViewModel
     }
 
     /// <summary>선택한 화면 클립의 크기를 비율만큼 바꾼다.</summary>
+    // shortcut: 미리보기에서 끌거나 휠을 굴리면 고정된 값만 바뀐다. 키프레임이 있는 속성은 속성 패널에서 고쳐야 한다.
     public void ScaleSelection(double factor) => EditVisual("크기 변경", clip => clip.Scale *= factor);
 }

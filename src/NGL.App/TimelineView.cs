@@ -218,6 +218,10 @@ public sealed class TimelineView : FrameworkElement
         };
         dc.DrawText(Text(label, ClipText, TextFace, 11), new Point(textLeft, rect.Top + 3));
         if (clip.GroupId is not null) dc.DrawText(Text("그룹", RulerText, TextFace, 9), new Point(textLeft, rect.Bottom - 14));
+
+        // 키프레임이 있는 시각마다 클립 아래쪽에 ◆를 그린다.
+        foreach (var time in clip.Keyframes.Values.SelectMany(keys => keys).Select(key => key.Time).Distinct())
+            dc.DrawGeometry(ClipText, null, Diamond(XOf(clip.Range.Start + time), rect.Bottom - 6, 3.5));
         dc.Pop();
     }
 

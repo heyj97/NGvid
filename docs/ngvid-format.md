@@ -41,6 +41,7 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | | `range` | 타임라인에서 차지하는 구간. `start`, `duration` |
 | | `linkId` | 같은 값의 클립끼리 연결됨(영상과 그 소리). 없으면 적지 않는다 |
 | | `groupId` | 같은 값의 클립끼리 그룹. 없으면 적지 않는다 |
+| | `keyframes` | 속성별 키프레임. 키는 `X`·`Y`·`Scale`·`Rotation`·`Opacity`·`Volume`, 값은 `time`(클립 시작에서 잰 시간)·`value`·`easing`(`Linear`·`EaseIn`·`EaseOut`·`EaseInOut`)의 목록 |
 | 마커 | `id`, `time`, `name` | `sequence.markers`의 항목 |
 | 원본 | `id`, `kind` | `kind`는 `Video`, `Audio`, `Image` |
 | | `name` | 보관함과 클립에 표시되는 이름 |
