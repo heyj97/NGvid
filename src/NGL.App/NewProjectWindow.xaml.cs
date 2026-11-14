@@ -18,7 +18,7 @@ public partial class NewProjectWindow : Window
 
         NameBox.Text = "내 프로젝트";
         LocationBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "NGvid");
-        PresetBox.ItemsSource = SequencePreset.All.Select(preset => $"{preset.Name} ({preset.Width}×{preset.Height})").ToList();
+        PresetBox.ItemsSource = SequencePreset.All;
         PresetBox.SelectedIndex = 0;
         FrameRateBox.ItemsSource = Sequence.SupportedFrameRates.Select(rate => $"{rate}fps").ToList();
         FrameRateBox.SelectedIndex = 0;

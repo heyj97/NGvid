@@ -3,52 +3,51 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
         xmlns:local="clr-namespace:NGL.App"
-        Title="{Binding Title}" Width="1360" Height="840" MinWidth="1000" MinHeight="500"
-        Background="#101114" Foreground="#E6E7EA" FontSize="13"
+        Title="{Binding Title}" Width="1360" Height="860" MinWidth="1100" MinHeight="640"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}" FontSize="13"
         AllowDrop="True" Drop="OnDrop" PreviewKeyDown="OnPreviewKeyDown">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="Visible" />
 
-        <!-- 키보드 단축키가 창으로 가도록 버튼은 포커스를 받지 않는다. -->
-        <Style TargetType="Button">
+        <!-- 키보드 단축키가 창으로 가도록 이 창의 버튼은 포커스를 받지 않는다. -->
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Focusable" Value="False" />
-            <Setter Property="Padding" Value="12,6" />
             <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="Background" Value="#26292F" />
-            <Setter Property="Foreground" Value="#E6E7EA" />
-            <Setter Property="BorderThickness" Value="0" />
         </Style>
-        <Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="#4C8DFF" />
-            <Setter Property="Foreground" Value="#0B0C0E" />
-            <Setter Property="FontWeight" Value="Bold" />
+        <Style x:Key="MainPrimary" TargetType="Button" BasedOn="{StaticResource Primary}">
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+        <Style x:Key="MainOutline" TargetType="Button" BasedOn="{StaticResource Outline}">
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+        <Style x:Key="MainGhost" TargetType="Button" BasedOn="{StaticResource Ghost}">
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+        <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="Focusable" Value="False" />
         </Style>
 
-        <!-- 켜고 끄는 작은 버튼: 켜지면 강조색 -->
-        <Style x:Key="Toggle" TargetType="ToggleButton">
-            <Setter Property="Focusable" Value="False" />
-            <Setter Property="Foreground" Value="#8E949C" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Back" Background="Transparent" CornerRadius="5" Padding="6,4" Margin="0,0,2,0">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Back" Property="Background" Value="#26292F" />
-                                <Setter Property="Foreground" Value="#4C8DFF" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <!-- 재생 조작의 아이콘 버튼 -->
+        <Style x:Key="Transport" TargetType="Button" BasedOn="{StaticResource MainGhost}">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Margin" Value="2,0" />
+        </Style>
+
+        <!-- 글자만 있는 작은 버튼 -->
+        <Style x:Key="Link" TargetType="Button" BasedOn="{StaticResource MainGhost}">
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            <Setter Property="FontSize" Value="12" />
         </Style>
 
         <!-- 보관함의 영상·사운드·이미지 탭 -->
         <Style x:Key="Tab" TargetType="RadioButton">
             <Setter Property="Focusable" Value="False" />
-            <Setter Property="Foreground" Value="#A7ACB4" />
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
@@ -57,8 +56,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Back" Property="Background" Value="#26292F" />
-                                <Setter Property="Foreground" Value="#E6E7EA" />
+                                <Setter TargetName="Back" Property="Background" Value="{StaticResource Chip}" />
+                                <Setter Property="Foreground" Value="{StaticResource Text}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -69,98 +68,102 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="48" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 상단: 메뉴, 프로젝트 이름, 시퀀스 규격 -->
-        <Border Grid.Row="0" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="0,0,0,1" Padding="12,6">
+        <!-- 상단: 로고, 메뉴, 프로젝트 이름과 시퀀스 규격, 실행 취소·다시 실행, 내보내기 -->
+        <Border Grid.Row="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="16,0">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Left" Text="NGvid" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <Menu DockPanel.Dock="Left" Background="Transparent" Foreground="#C9CCD1" VerticalAlignment="Center" Focusable="False">
-                    <MenuItem x:Name="FileMenu" Header="파일" Padding="10,6">
-                        <MenuItem Header="새 프로젝트" InputGestureText="Ctrl+N" Click="OnNewClick" Foreground="Black" />
-                        <MenuItem Header="열기" InputGestureText="Ctrl+O" Click="OnOpenClick" Foreground="Black" />
-                        <MenuItem Header="저장" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" Foreground="Black" />
+                <Border DockPanel.Dock="Left" Width="24" Height="24" CornerRadius="6" Background="{StaticResource Accent}" VerticalAlignment="Center">
+                    <Path Data="M3 2 L10 6 L3 10 Z" Fill="#101114" Width="12" Height="12" />
+                </Border>
+                <TextBlock DockPanel.Dock="Left" Text="NGvid" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,16,0" />
+                <Menu DockPanel.Dock="Left" Background="Transparent" VerticalAlignment="Center" Focusable="False">
+                    <MenuItem x:Name="FileMenu" Header="파일" Padding="10,8">
+                        <MenuItem Header="새 프로젝트" InputGestureText="Ctrl+N" Click="OnNewClick" />
+                        <MenuItem Header="열기" InputGestureText="Ctrl+O" Click="OnOpenClick" />
+                        <MenuItem Header="저장" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" />
                         <Separator />
-                        <MenuItem Header="미디어 가져오기" InputGestureText="Ctrl+I" Click="OnImportClick" Foreground="Black"
-                                  IsEnabled="{Binding HasProject}" />
-                        <MenuItem x:Name="ExportItem" Header="내보내기" InputGestureText="Ctrl+E" Click="OnExportClick" Foreground="Black"
-                                  IsEnabled="{Binding HasProject}" />
+                        <MenuItem Header="미디어 가져오기" InputGestureText="Ctrl+I" Click="OnImportClick" IsEnabled="{Binding HasProject}" />
+                        <MenuItem x:Name="ExportItem" Header="내보내기" InputGestureText="Ctrl+E" Click="OnExportClick" IsEnabled="{Binding HasProject}" />
                         <Separator />
-                        <MenuItem x:Name="RestoreItem" Header="백업에서 복구…" Click="OnRestoreClick" Foreground="Black"
-                                  IsEnabled="{Binding HasProject}" />
-                        <MenuItem x:Name="SettingsItem" Header="설정…" Click="OnSettingsClick" Foreground="Black" />
+                        <MenuItem x:Name="RestoreItem" Header="백업에서 복구…" Click="OnRestoreClick" IsEnabled="{Binding HasProject}" />
+                        <MenuItem x:Name="SettingsItem" Header="설정…" Click="OnSettingsClick" />
                     </MenuItem>
-                    <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,6" IsEnabled="{Binding HasProject}">
-                        <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" Foreground="Black" />
-                    </MenuItem>
-                    <MenuItem x:Name="TextMenu" Header="텍스트·자막" Padding="10,6" IsEnabled="{Binding HasProject}">
-                        <MenuItem x:Name="AddTextItem" Header="텍스트 추가" InputGestureText="T" Command="{Binding AddTextCommand}" Foreground="Black" />
-                        <MenuItem x:Name="AddCaptionItem" Header="자막 추가" InputGestureText="C" Command="{Binding AddCaptionCommand}" Foreground="Black" />
+                    <MenuItem x:Name="EditMenu" Header="편집" Padding="10,8" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" />
+                        <MenuItem x:Name="RedoItem" Header="{Binding RedoText}" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" />
                         <Separator />
-                        <MenuItem x:Name="CaptionListItem" Header="자막 목록…" Click="OnCaptionListClick" Foreground="Black" />
-                    </MenuItem>
-                    <MenuItem x:Name="EditMenu" Header="편집" Padding="10,6" IsEnabled="{Binding HasProject}">
-                        <MenuItem x:Name="UndoItem" Header="{Binding UndoText}" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Foreground="Black" />
-                        <MenuItem x:Name="RedoItem" Header="{Binding RedoText}" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" Foreground="Black" />
+                        <MenuItem x:Name="SplitItem" Header="재생 위치에서 분할" InputGestureText="Ctrl+K" Command="{Binding SplitCommand}" />
+                        <MenuItem x:Name="DeleteItem" Header="삭제" InputGestureText="Delete" Command="{Binding DeleteCommand}" />
+                        <MenuItem x:Name="RippleDeleteItem" Header="리플 삭제" InputGestureText="Shift+Delete" Command="{Binding RippleDeleteCommand}" />
                         <Separator />
-                        <MenuItem x:Name="SplitItem" Header="재생 위치에서 분할" InputGestureText="Ctrl+K" Command="{Binding SplitCommand}" Foreground="Black" />
-                        <MenuItem x:Name="DeleteItem" Header="삭제" InputGestureText="Delete" Command="{Binding DeleteCommand}" Foreground="Black" />
-                        <MenuItem x:Name="RippleDeleteItem" Header="리플 삭제" InputGestureText="Shift+Delete" Command="{Binding RippleDeleteCommand}" Foreground="Black" />
-                        <Separator />
-                        <MenuItem x:Name="CopyItem" Header="복사" InputGestureText="Ctrl+C" Command="{Binding CopyCommand}" Foreground="Black" />
-                        <MenuItem x:Name="PasteItem" Header="붙여넣기" InputGestureText="Ctrl+V" Command="{Binding PasteCommand}" Foreground="Black" />
-                        <MenuItem x:Name="PastePropertiesItem" Header="속성 붙여넣기" InputGestureText="Ctrl+Alt+V" Command="{Binding PastePropertiesCommand}" Foreground="Black"
+                        <MenuItem x:Name="CopyItem" Header="복사" InputGestureText="Ctrl+C" Command="{Binding CopyCommand}" />
+                        <MenuItem x:Name="PasteItem" Header="붙여넣기" InputGestureText="Ctrl+V" Command="{Binding PasteCommand}" />
+                        <MenuItem x:Name="PastePropertiesItem" Header="속성 붙여넣기" InputGestureText="Ctrl+Alt+V" Command="{Binding PastePropertiesCommand}"
                                   ToolTip="복사한 클립의 변형·볼륨·페이드 등을 선택한 클립에 입힙니다" />
-                        <MenuItem x:Name="SelectAllItem" Header="모두 선택" InputGestureText="Ctrl+A" Command="{Binding SelectAllCommand}" Foreground="Black" />
+                        <MenuItem x:Name="SelectAllItem" Header="모두 선택" InputGestureText="Ctrl+A" Command="{Binding SelectAllCommand}" />
                         <Separator />
-                        <MenuItem x:Name="GroupItem" Header="그룹" InputGestureText="Ctrl+G" Command="{Binding GroupCommand}" Foreground="Black" />
-                        <MenuItem x:Name="UngroupItem" Header="그룹 해제" InputGestureText="Ctrl+Shift+G" Command="{Binding UngroupCommand}" Foreground="Black" />
-                        <MenuItem x:Name="LinkItem" Header="영상·오디오 연결" Command="{Binding LinkCommand}" Foreground="Black" />
-                        <MenuItem x:Name="UnlinkItem" Header="영상·오디오 분리" Command="{Binding UnlinkCommand}" Foreground="Black" />
+                        <MenuItem x:Name="GroupItem" Header="그룹" InputGestureText="Ctrl+G" Command="{Binding GroupCommand}" />
+                        <MenuItem x:Name="UngroupItem" Header="그룹 해제" InputGestureText="Ctrl+Shift+G" Command="{Binding UngroupCommand}" />
+                        <MenuItem x:Name="LinkItem" Header="영상·오디오 연결" Command="{Binding LinkCommand}" />
+                        <MenuItem x:Name="UnlinkItem" Header="영상·오디오 분리" Command="{Binding UnlinkCommand}" />
                         <Separator />
-                        <MenuItem x:Name="FreezeFrameItem" Header="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" Foreground="Black" />
+                        <MenuItem x:Name="FreezeFrameItem" Header="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" />
+                    </MenuItem>
+                    <MenuItem x:Name="TextMenu" Header="텍스트·자막" Padding="10,8" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="AddTextItem" Header="텍스트 추가" InputGestureText="T" Command="{Binding AddTextCommand}" />
+                        <MenuItem x:Name="AddCaptionItem" Header="자막 추가" InputGestureText="C" Command="{Binding AddCaptionCommand}" />
+                        <Separator />
+                        <MenuItem x:Name="CaptionListItem" Header="자막 목록…" Click="OnCaptionListClick" />
+                    </MenuItem>
+                    <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,8" IsEnabled="{Binding HasProject}">
+                        <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" />
                     </MenuItem>
                 </Menu>
 
-                <Button x:Name="ExportButton" DockPanel.Dock="Right" Content="내보내기" Click="OnExportClick" Style="{StaticResource Primary}"
-                        Margin="10,0,0,0" IsEnabled="{Binding HasProject}" ToolTip="MP4로 내보내기 (Ctrl+E)" />
-                <ComboBox x:Name="QualityBox" DockPanel.Dock="Right" SelectedIndex="{Binding QualityIndex}" Focusable="False"
-                          Width="100" VerticalAlignment="Center" ToolTip="미리보기 화질">
-                    <ComboBoxItem Content="화질 전체" />
-                    <ComboBoxItem Content="화질 1/2" />
-                    <ComboBoxItem Content="화질 1/4" />
-                </ComboBox>
+                <Button x:Name="ExportButton" DockPanel.Dock="Right" Content="내보내기" Click="OnExportClick" Style="{StaticResource MainPrimary}"
+                        Height="36" Padding="16,0" Margin="8,0,0,0" IsEnabled="{Binding HasProject}" ToolTip="MP4로 내보내기 (Ctrl+E)" />
+                <Button x:Name="RedoButton" DockPanel.Dock="Right" Style="{StaticResource MainOutline}" Width="36" Height="36" Padding="0" Margin="4,0,0,0"
+                        Command="{Binding RedoCommand}" IsEnabled="{Binding HasProject}" ToolTip="{Binding RedoText}" AutomationProperties.Name="다시 실행">
+                    <Path Style="{StaticResource Icon}" Data="M11 4 L14 7 L11 10 M14 7 H6 A4 4 0 0 0 6 15 H9" />
+                </Button>
+                <Button x:Name="UndoButton" DockPanel.Dock="Right" Style="{StaticResource MainOutline}" Width="36" Height="36" Padding="0" Margin="0"
+                        Command="{Binding UndoCommand}" IsEnabled="{Binding HasProject}" ToolTip="{Binding UndoText}" AutomationProperties.Name="실행 취소">
+                    <Path Style="{StaticResource Icon}" Data="M5 4 L2 7 L5 10 M2 7 H10 A4 4 0 0 1 10 15 H7" />
+                </Button>
                 <TextBlock x:Name="AudioWarningLabel" DockPanel.Dock="Right" Text="{Binding AudioWarning}"
                            Margin="10,0" VerticalAlignment="Center" Foreground="#FFB454" />
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock x:Name="ProjectNameLabel" Text="{Binding Project.Name}" FontWeight="Medium" VerticalAlignment="Center" />
-                    <Border BorderBrush="#33363D" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="8,0,0,0"
+                    <Border BorderBrush="{StaticResource InputLine}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="8,0,0,0"
                             Visibility="{Binding HasProject, Converter={StaticResource Visible}}">
-                        <TextBlock x:Name="SequenceLabel" Text="{Binding SequenceText}" FontSize="12" Foreground="#A7ACB4" />
+                        <TextBlock x:Name="SequenceLabel" Text="{Binding SequenceText}" FontSize="12" Foreground="{StaticResource Muted}" />
                     </Border>
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- 가운데: 보관함 + 미리보기 -->
+        <!-- 가운데: 보관함 + 미리보기 + 속성 패널 -->
         <Grid Grid.Row="1" Visibility="{Binding HasProject, Converter={StaticResource Visible}}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="280" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="300" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="0,0,1,0">
+            <!-- 리소스 보관함 -->
+            <Border Grid.Column="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="12,12,12,8">
-                        <Button x:Name="ImportButton" DockPanel.Dock="Right" Content="＋ 가져오기" Click="OnImportClick" Margin="0"
-                                ToolTip="미디어 가져오기 (Ctrl+I). 파일을 창에 끌어 놓아도 됩니다." />
+                        <Button x:Name="ImportButton" DockPanel.Dock="Right" Click="OnImportClick" Width="32" Height="32" Padding="0" Margin="0"
+                                AutomationProperties.Name="가져오기" ToolTip="미디어 가져오기 (Ctrl+I). 파일을 창에 끌어 놓아도 됩니다.">
+                            <Path Style="{StaticResource Icon}" Data="M7 2 V12 M2 7 H12" Width="14" Height="14" />
+                        </Button>
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="VideoTab" Content="영상" Style="{StaticResource Tab}" Tag="0" Checked="OnTabChecked" IsChecked="True" />
                             <RadioButton x:Name="SoundTab" Content="사운드" Style="{StaticResource Tab}" Checked="OnTabChecked" Tag="1" />
@@ -187,6 +190,12 @@
                         </DockPanel>
                     </Border>
 
+                    <Grid DockPanel.Dock="Bottom" Margin="12,0,12,12">
+                        <Rectangle Stroke="#3A3E46" StrokeDashArray="4 3" RadiusX="8" RadiusY="8" />
+                        <TextBlock Text="파일을 여기로 끌어 놓으세요" Foreground="{StaticResource Muted}" FontSize="12"
+                                   HorizontalAlignment="Center" Margin="0,16" />
+                    </Grid>
+
                     <ListBox x:Name="AssetList" ItemsSource="{Binding VisibleAssets}" Background="Transparent" BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="6,0" Focusable="False">
                         <ListBox.ItemsPanel>
@@ -195,10 +204,8 @@
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                         <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="5" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                <Setter Property="Focusable" Value="False" />
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource PlainItem}">
+                                <Setter Property="Padding" Value="5,4,5,6" />
                             </Style>
                         </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
@@ -212,26 +219,26 @@
                                                       ToolTip="미리보기용 작은 사본을 만듭니다(영상만). 내보내기는 언제나 원본을 씁니다." />
                                         </ContextMenu>
                                     </StackPanel.ContextMenu>
-                                    <Border Height="74" CornerRadius="6" Background="#1F2126" BorderBrush="#2A2D33" BorderThickness="1" ClipToBounds="True"
-                                            MouseMove="OnAssetMouseMove" ToolTip="타임라인으로 끌어 놓을 수 있습니다">
+                                    <Border Height="70" CornerRadius="6" Background="{StaticResource Input}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                            ClipToBounds="True" MouseMove="OnAssetMouseMove" ToolTip="타임라인으로 끌어 놓을 수 있습니다">
                                         <Grid>
-                                            <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                                             <TextBlock Text="원본 없음" Foreground="#FF7A7A" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Visibility="{Binding IsMissing, Converter={StaticResource Visible}}" />
                                             <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="4" Padding="5,1"
-                                                    CornerRadius="4" Background="#B0000000">
-                                                <TextBlock Text="{Binding DurationText}" FontFamily="Consolas" FontSize="11" />
+                                                    CornerRadius="4" Background="#B3000000">
+                                                <TextBlock Text="{Binding DurationText}" FontFamily="{StaticResource Mono}" FontSize="11" />
                                             </Border>
                                             <Button Content="＋" ToolTip="타임라인 맨 뒤에 추가" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                    Margin="4" Padding="6,1" Style="{StaticResource Primary}"
+                                                    Margin="4" Padding="6,1" Background="#B3000000"
                                                     Command="{Binding DataContext.AddToTimelineCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                     CommandParameter="{Binding}" />
                                         </Grid>
                                     </Border>
                                     <!-- 이름을 고치면 이 원본을 쓰는 모든 클립에 반영된다. Enter 또는 다른 곳 클릭으로 확정. -->
                                     <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown"
-                                             Background="Transparent" Foreground="#C9CCD1" BorderThickness="0" CaretBrush="#E6E7EA"
-                                             FontSize="12" Margin="0,4,0,0" ToolTip="{Binding Name}" />
+                                             Background="Transparent" Foreground="{StaticResource Text2}" BorderThickness="0" Padding="0"
+                                             FontSize="12" Margin="0,6,0,0" ToolTip="{Binding Name}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -239,61 +246,173 @@
                 </DockPanel>
             </Border>
 
-            <!-- 미리보기: 선택한 클립을 끌어 옮기고 마우스 휠로 크기를 바꾼다. -->
-            <skia:SKGLElement Grid.Column="1" x:Name="Preview" PaintSurface="OnPaintSurface"
-                              MouseLeftButtonDown="OnPreviewMouseDown" MouseMove="OnPreviewMouseMove"
-                              MouseLeftButtonUp="OnPreviewMouseUp" MouseWheel="OnPreviewWheel" />
+            <!-- 미리보기와 재생 조작 -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <!-- 속성 패널: 선택한 오디오 클립과 그 트랙. 값은 Enter나 다른 곳 클릭으로 확정한다. -->
-            <Border Grid.Column="2" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="1,0,0,0" Padding="14,12">
+                <!-- 선택한 클립을 끌어 옮기고 마우스 휠로 크기를 바꾼다. -->
+                <skia:SKGLElement Grid.Row="0" x:Name="Preview" PaintSurface="OnPaintSurface"
+                                  MouseLeftButtonDown="OnPreviewMouseDown" MouseMove="OnPreviewMouseMove"
+                                  MouseLeftButtonUp="OnPreviewMouseUp" MouseWheel="OnPreviewWheel" />
+
+                <Slider Grid.Row="1" x:Name="PositionSlider" Minimum="0" Maximum="{Binding LastFrameSeconds}" Margin="16,0"
+                        Value="{Binding PositionSeconds}" Focusable="False" IsMoveToPointEnabled="True" />
+
+                <DockPanel Grid.Row="2" Margin="16,6,16,10">
+                    <TextBlock x:Name="TimeLabel" DockPanel.Dock="Left" Text="{Binding PositionText}" Width="92"
+                               VerticalAlignment="Center" FontFamily="{StaticResource Mono}" />
+
+                    <CheckBox x:Name="SafeAreaBox" DockPanel.Dock="Right" Content="안전 영역" IsChecked="{Binding ShowSafeArea}"
+                              Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                    <ComboBox x:Name="QualityBox" DockPanel.Dock="Right" SelectedIndex="{Binding QualityIndex}" Focusable="False"
+                              Width="70" VerticalAlignment="Center" ToolTip="미리보기 화질. 낮추면 재생이 가벼워집니다.">
+                        <ComboBoxItem Content="전체" />
+                        <ComboBoxItem Content="1/2" />
+                        <ComboBoxItem Content="1/4" />
+                    </ComboBox>
+                    <TextBlock DockPanel.Dock="Right" Text="화질" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,6,0" />
+                    <TextBlock x:Name="TotalLabel" DockPanel.Dock="Right" Text="{Binding TotalText}" VerticalAlignment="Center"
+                               FontFamily="{StaticResource Mono}" Foreground="{StaticResource Muted}" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Style="{StaticResource Transport}" Command="{Binding GoToCommand}" CommandParameter="start"
+                                AutomationProperties.Name="처음으로" ToolTip="처음으로">
+                            <Path Style="{StaticResource Icon}" Data="M3 3 V13 M13 3 L6 8 L13 13 Z" />
+                        </Button>
+                        <Button Style="{StaticResource Transport}" Command="{Binding StepCommand}" CommandParameter="-1"
+                                AutomationProperties.Name="이전 프레임" ToolTip="이전 프레임 (←)">
+                            <Path Style="{StaticResource Icon}" Data="M10 3 L5 8 L10 13" />
+                        </Button>
+                        <Button x:Name="PlayButton" Command="{Binding PlayPauseCommand}" Width="44" Height="44" Margin="4,0" Focusable="False"
+                                AutomationProperties.Name="{Binding PlayButtonText}" ToolTip="재생·일시정지 (스페이스)">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid>
+                                        <Ellipse x:Name="Back" Fill="{StaticResource Text}" />
+                                        <Path x:Name="Glyph" Data="M5 3 L13 8 L5 13 Z" Fill="#101114" Width="16" Height="16" Margin="2,0,0,0" />
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                            <Setter TargetName="Glyph" Property="Data" Value="M4 3 H7 V13 H4 Z M9 3 H12 V13 H9 Z" />
+                                            <Setter TargetName="Glyph" Property="Margin" Value="0" />
+                                        </DataTrigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Back" Property="Fill" Value="White" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Style="{StaticResource Transport}" Command="{Binding StepCommand}" CommandParameter="1"
+                                AutomationProperties.Name="다음 프레임" ToolTip="다음 프레임 (→)">
+                            <Path Style="{StaticResource Icon}" Data="M6 3 L11 8 L6 13" />
+                        </Button>
+                        <Button Style="{StaticResource Transport}" Command="{Binding GoToCommand}" CommandParameter="end"
+                                AutomationProperties.Name="끝으로" ToolTip="끝으로">
+                            <Path Style="{StaticResource Icon}" Data="M13 3 V13 M3 3 L10 8 L3 13 Z" />
+                        </Button>
+                        <ToggleButton x:Name="LoopCheck" IsChecked="{Binding IsLooping}" Style="{StaticResource Toggle}" Width="36" Height="36" Margin="2,0"
+                                      Foreground="{StaticResource Text2}" AutomationProperties.Name="구간 반복" ToolTip="구간 반복 (L)">
+                            <Path Data="M3 7 V6 A2 2 0 0 1 5 4 H12 L10 2 M13 9 V10 A2 2 0 0 1 11 12 H4 L6 14" Width="16" Height="16" StrokeThickness="1.6">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="Stroke" Value="{StaticResource Text2}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsLooping}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource Accent}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </ToggleButton>
+                        <Button Content="시작점" Style="{StaticResource Link}" Command="{Binding SetLoopStartCommand}" VerticalAlignment="Center"
+                                ToolTip="현재 위치를 반복 구간의 시작으로 (I)" />
+                        <Button Content="끝점" Style="{StaticResource Link}" Command="{Binding SetLoopEndCommand}" VerticalAlignment="Center"
+                                ToolTip="현재 위치를 반복 구간의 끝으로 (O)" />
+                        <TextBlock Text="{Binding LoopText}" VerticalAlignment="Center" Foreground="{StaticResource Dim}"
+                                   FontFamily="{StaticResource Mono}" FontSize="11" Margin="6,0,0,0"
+                                   Visibility="{Binding IsLooping, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+
+            <!-- 속성 패널: 값은 Enter나 다른 곳 클릭으로 확정한다. -->
+            <Border Grid.Column="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0">
                 <Border.Resources>
-                    <Style TargetType="TextBox">
-                        <Setter Property="Background" Value="#1F2126" />
-                        <Setter Property="Foreground" Value="#E6E7EA" />
-                        <Setter Property="BorderBrush" Value="#33363D" />
-                        <Setter Property="CaretBrush" Value="#E6E7EA" />
-                        <Setter Property="Padding" Value="6,4" />
-                        <Setter Property="Width" Value="70" />
+                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                        <Setter Property="Padding" Value="8,4" />
+                        <Setter Property="FontFamily" Value="{StaticResource Mono}" />
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="Width" Value="76" />
                         <Setter Property="HorizontalAlignment" Value="Right" />
                     </Style>
+                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                        <Setter Property="MinWidth" Value="110" />
+                    </Style>
                     <Style x:Key="Label" TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="#A7ACB4" />
+                        <Setter Property="Foreground" Value="{StaticResource Muted}" />
                         <Setter Property="VerticalAlignment" Value="Center" />
                     </Style>
+                    <Style x:Key="Title" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="FontWeight" Value="Bold" />
+                        <Setter Property="Margin" Value="0,0,0,10" />
+                    </Style>
+                    <Style x:Key="Divider" TargetType="Border">
+                        <Setter Property="Height" Value="1" />
+                        <Setter Property="Background" Value="{StaticResource Line}" />
+                        <Setter Property="Margin" Value="-16,4,-16,12" />
+                    </Style>
                     <Style TargetType="DockPanel">
-                        <Setter Property="Margin" Value="0,0,0,8" />
+                        <Setter Property="Margin" Value="0,0,0,10" />
+                    </Style>
+                    <!-- 키프레임 버튼: ◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음 -->
+                    <Style x:Key="Key" TargetType="Button" BasedOn="{StaticResource MainGhost}">
+                        <Setter Property="Width" Value="28" />
+                        <Setter Property="Height" Value="28" />
+                        <Setter Property="Margin" Value="4,0,-6,0" />
+                        <Setter Property="Foreground" Value="{StaticResource Accent}" />
+                        <Style.Triggers>
+                            <Trigger Property="Content" Value="◇">
+                                <Setter Property="Foreground" Value="#5C6370" />
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </Border.Resources>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-                <StackPanel>
-                    <TextBlock Text="클립을 선택하면 여기에서 속성을 바꿀 수 있습니다." Foreground="#8E949C" TextWrapping="Wrap"
+                <StackPanel Margin="16,12">
+                    <TextBlock Text="클립을 선택하면 여기에서 속성을 바꿀 수 있습니다." Foreground="{StaticResource Dim}" TextWrapping="Wrap"
                                Visibility="{Binding HasNoSelection, Converter={StaticResource Visible}}" />
 
-                    <!-- 영상·이미지 클립 -->
-                    <StackPanel x:Name="VisualInspector" Margin="0,0,0,16" Visibility="{Binding HasVisualSelection, Converter={StaticResource Visible}}">
-                        <TextBlock x:Name="VisualTitle" Text="{Binding VisualTitle}" FontWeight="Medium" Margin="0,0,0,12" />
+                    <StackPanel x:Name="VisualInspector" Visibility="{Binding HasVisualSelection, Converter={StaticResource Visible}}">
+                        <TextBlock x:Name="VisualTitle" Text="{Binding VisualTitle}" Style="{StaticResource Title}" />
                         <DockPanel>
                             <Button x:Name="PositionKeyButton" DockPanel.Dock="Right" Content="{Binding PositionKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Position"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="PositionYBox" DockPanel.Dock="Right" Width="56" Margin="6,0,0,0" Text="{Binding PositionY, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="아래로 (픽셀)" />
                             <TextBox x:Name="PositionXBox" DockPanel.Dock="Right" Width="56" Text="{Binding PositionX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
                             <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" ToolTip="화면 가운데에서 옮긴 거리. 미리보기에서 끌어도 됩니다." />
                         </DockPanel>
                         <DockPanel>
                             <Button x:Name="ScaleKeyButton" DockPanel.Dock="Right" Content="{Binding ScaleKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Scale"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="ScaleBox" DockPanel.Dock="Right" Text="{Binding ScalePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="10~400. 미리보기에서 마우스 휠로도 바꿀 수 있습니다." />
                         </DockPanel>
                         <DockPanel>
                             <Button x:Name="RotationKeyButton" DockPanel.Dock="Right" Content="{Binding RotationKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Rotation"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="RotationBox" DockPanel.Dock="Right" Text="{Binding RotationDegrees, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="회전 (도)" Style="{StaticResource Label}" />
                         </DockPanel>
                         <DockPanel>
                             <Button x:Name="OpacityKeyButton" DockPanel.Dock="Right" Content="{Binding OpacityKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Opacity"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="OpacityBox" DockPanel.Dock="Right" Text="{Binding OpacityPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="불투명도 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
@@ -315,14 +434,15 @@
                             <TextBox x:Name="CropBottomBox" Width="52" Text="{Binding CropBottom, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <CheckBox x:Name="FlipHorizontalBox" Content="좌우 뒤집기" IsChecked="{Binding FlipHorizontal}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,14,0" />
-                            <CheckBox x:Name="FlipVerticalBox" Content="상하 뒤집기" IsChecked="{Binding FlipVertical}" Foreground="#E6E7EA" Focusable="False" />
+                            <CheckBox x:Name="FlipHorizontalBox" Content="좌우 뒤집기" IsChecked="{Binding FlipHorizontal}" Focusable="False" Margin="0,0,14,0" />
+                            <CheckBox x:Name="FlipVerticalBox" Content="상하 뒤집기" IsChecked="{Binding FlipVertical}" Focusable="False" />
                         </StackPanel>
                         <Button x:Name="ResetTransformButton" Content="변형 초기화" Command="{Binding ResetTransformCommand}" Margin="0"
                                 ToolTip="위치·크기·회전·자르기·뒤집기를 처음 상태로 되돌립니다" />
 
                         <!-- 전환, 효과, 색보정 -->
-                        <TextBlock Text="전환" FontWeight="Medium" Margin="0,16,0,12" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="전환" Style="{StaticResource Title}" />
                         <DockPanel>
                             <TextBox x:Name="TransitionSecondsBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding TransitionSeconds, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="길이 (초)" />
                             <ComboBox x:Name="TransitionBox" DockPanel.Dock="Right" Width="130" ItemsSource="{x:Static local:MainViewModel.TransitionNames}"
@@ -331,7 +451,8 @@
                                        ToolTip="앞 클립에서 이 클립으로 넘어올 때의 효과. 같은 트랙에서 바로 앞에 붙은 클립과 이어집니다." />
                         </DockPanel>
 
-                        <TextBlock Text="효과" FontWeight="Medium" Margin="0,8,0,12" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="효과" Style="{StaticResource Title}" />
                         <DockPanel>
                             <TextBox x:Name="BlurBox" DockPanel.Dock="Right" Text="{Binding BlurAmount, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="흐림 (0~100)" Style="{StaticResource Label}" />
@@ -345,7 +466,8 @@
                             <TextBlock Text="비네팅 (%)" Style="{StaticResource Label}" ToolTip="가장자리를 어둡게 합니다" />
                         </DockPanel>
 
-                        <TextBlock Text="색보정" FontWeight="Medium" Margin="0,8,0,12" ToolTip="-100~100, 0이 원래 그대로" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="색보정" Style="{StaticResource Title}" ToolTip="-100~100, 0이 원래 그대로" />
                         <DockPanel>
                             <TextBox x:Name="ExposureBox" DockPanel.Dock="Right" Text="{Binding ExposureStops, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="노출 (-2~2)" Style="{StaticResource Label}" ToolTip="1마다 밝기가 두 배" />
@@ -376,7 +498,8 @@
                         <Button x:Name="ResetEffectsButton" Content="효과·색보정 초기화" Command="{Binding ResetEffectsCommand}" Margin="0" />
 
                         <!-- 크로마키 -->
-                        <TextBlock Text="크로마키" FontWeight="Medium" Margin="0,16,0,12" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="크로마키" Style="{StaticResource Title}" />
                         <DockPanel>
                             <TextBox x:Name="KeyColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding KeyColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="지울 색" Style="{StaticResource Label}" ToolTip="이 색을 투명하게 만듭니다. 그린스크린은 #00FF00, 블루스크린은 #0000FF. 비우면 끕니다." />
@@ -391,7 +514,8 @@
                         </DockPanel>
 
                         <!-- 마스크 -->
-                        <TextBlock Text="마스크" FontWeight="Medium" Margin="0,8,0,12" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="마스크" Style="{StaticResource Title}" />
                         <DockPanel>
                             <ComboBox x:Name="MaskShapeBox" DockPanel.Dock="Right" Width="110" ItemsSource="{x:Static local:MainViewModel.MaskShapeNames}"
                                       SelectedIndex="{Binding MaskShapeIndex}" Focusable="False" />
@@ -400,7 +524,7 @@
                         <StackPanel x:Name="MaskSettings" Visibility="{Binding HasMask, Converter={StaticResource Visible}}">
                             <DockPanel>
                                 <Button x:Name="MaskKeyButton" DockPanel.Dock="Right" Content="{Binding MaskKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Mask"
-                                        Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 마스크 위치·크기의 키프레임 찍기·지우기" />
+                                        Style="{StaticResource Key}" ToolTip="재생 위치에 마스크 위치·크기의 키프레임 찍기·지우기" />
                                 <TextBox x:Name="MaskYBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskYPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="위에서부터 (%)" />
                                 <TextBox x:Name="MaskXBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskXPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="왼쪽에서부터 (%)" />
                                 <TextBlock Text="가운데 (%)" Style="{StaticResource Label}" ToolTip="클립 그림 안에서의 위치. 50, 50이 한가운데" />
@@ -414,20 +538,21 @@
                                 <TextBox x:Name="MaskFeatherBox" DockPanel.Dock="Right" Text="{Binding MaskFeather, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                                 <TextBlock Text="가장자리 흐림" Style="{StaticResource Label}" />
                             </DockPanel>
-                            <CheckBox x:Name="MaskInvertedBox" Content="반전 (도형 안쪽을 가림)" IsChecked="{Binding MaskInverted}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,0,8" />
-                            <CheckBox x:Name="MaskEditingBox" Content="미리보기에서 마스크 편집" IsChecked="{Binding MaskEditing}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,0,8"
+                            <CheckBox x:Name="MaskInvertedBox" Content="반전 (도형 안쪽을 가림)" IsChecked="{Binding MaskInverted}" Focusable="False" Margin="0,0,0,8" />
+                            <CheckBox x:Name="MaskEditingBox" Content="미리보기에서 마스크 편집" IsChecked="{Binding MaskEditing}" Focusable="False" Margin="0,0,0,8"
                                       ToolTip="켜면 미리보기에서 끌어서 마스크를 옮기고 휠로 크기를 바꿉니다. 자유 도형은 누른 곳에 점이 찍힙니다." />
                             <DockPanel Visibility="{Binding IsPolygonMask, Converter={StaticResource Visible}}">
                                 <Button x:Name="ClearMaskPointsButton" DockPanel.Dock="Right" Content="점 모두 지우기" Command="{Binding ClearMaskPointsCommand}" Margin="0" Padding="8,4" />
                                 <TextBlock x:Name="MaskPointLabel" Text="{Binding MaskPointText}" Style="{StaticResource Label}" ToolTip="점이 세 개 이상이면 마스크가 적용됩니다" />
                             </DockPanel>
                         </StackPanel>
+                        <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
                     <!-- 텍스트·자막 -->
-                    <StackPanel x:Name="TextInspector" Margin="0,0,0,16" Visibility="{Binding HasTextSelection, Converter={StaticResource Visible}}">
-                        <TextBlock x:Name="TextTitle" Text="{Binding TextTitle}" FontWeight="Medium" Margin="0,0,0,12" />
-                        <TextBox x:Name="TextContentBox" Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
+                    <StackPanel x:Name="TextInspector" Visibility="{Binding HasTextSelection, Converter={StaticResource Visible}}">
+                        <TextBlock x:Name="TextTitle" Text="{Binding TextTitle}" Style="{StaticResource Title}" />
+                        <TextBox x:Name="TextContentBox" FontFamily="{StaticResource Ui}" FontSize="13" Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
                                  Width="Auto" HorizontalAlignment="Stretch" MinHeight="54" Margin="0,0,0,8" ToolTip="문구. Enter로 줄을 바꾸고, 다른 곳을 눌러 확정합니다." />
                         <DockPanel>
                             <ComboBox x:Name="FontBox" DockPanel.Dock="Right" Width="150" ItemsSource="{x:Static local:MainViewModel.FontNames}"
@@ -435,7 +560,7 @@
                             <TextBlock Text="글꼴" Style="{StaticResource Label}" />
                         </DockPanel>
                         <DockPanel>
-                            <CheckBox x:Name="BoldBox" DockPanel.Dock="Right" Content="굵게" IsChecked="{Binding TextBold}" Foreground="#E6E7EA" Focusable="False" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            <CheckBox x:Name="BoldBox" DockPanel.Dock="Right" Content="굵게" IsChecked="{Binding TextBold}" Focusable="False" Margin="8,0,0,0" VerticalAlignment="Center" />
                             <TextBox x:Name="TextSizeBox" DockPanel.Dock="Right" Text="{Binding TextSize, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="크기" Style="{StaticResource Label}" />
                         </DockPanel>
@@ -463,7 +588,7 @@
                         </DockPanel>
                         <DockPanel>
                             <Button x:Name="TextPositionKeyButton" DockPanel.Dock="Right" Content="{Binding PositionKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Position"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기" />
                             <TextBox x:Name="TextYBox" DockPanel.Dock="Right" Width="56" Margin="6,0,0,0" Text="{Binding TextY, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="아래로 (픽셀)" />
                             <TextBox x:Name="TextXBox" DockPanel.Dock="Right" Width="56" Text="{Binding TextX, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="오른쪽으로 (픽셀)" />
                             <TextBlock Text="위치 X · Y" Style="{StaticResource Label}" />
@@ -477,29 +602,31 @@
                         <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 자막에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
                                 Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}"
                                 ToolTip="문구와 시간은 그대로 두고 스타일만 복사합니다" />
+                        <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
                     <!-- 속도 -->
-                    <StackPanel x:Name="SpeedInspector" Margin="0,0,0,16" Visibility="{Binding HasSpeedSelection, Converter={StaticResource Visible}}">
-                        <TextBlock Text="속도" FontWeight="Medium" Margin="0,0,0,12" />
+                    <StackPanel x:Name="SpeedInspector" Visibility="{Binding HasSpeedSelection, Converter={StaticResource Visible}}">
+                        <TextBlock Text="속도" Style="{StaticResource Title}" />
                         <DockPanel>
                             <Button x:Name="SpeedKeyButton" DockPanel.Dock="Right" Content="{Binding SpeedKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Speed"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 속도 키프레임 찍기·지우기. 키프레임 사이에서 속도가 서서히 변합니다(속도 램프)." />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 속도 키프레임 찍기·지우기. 키프레임 사이에서 속도가 서서히 변합니다(속도 램프)." />
                             <TextBox x:Name="SpeedBox" DockPanel.Dock="Right" Text="{Binding SpeedPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="속도 (%)" Style="{StaticResource Label}"
                                        ToolTip="25~400. 클립의 길이가 속도에 맞게 바뀝니다(뒤 클립이 있으면 그 앞까지만). 소리의 음높이는 유지됩니다." />
                         </DockPanel>
                         <Button x:Name="FreezeFrameButton" Content="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" Margin="0"
                                 ToolTip="재생 위치의 화면을 이미지로 저장하고 그 자리에 2초짜리 정지 화면을 끼워 넣습니다" />
+                        <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
                     <!-- 오디오 클립과 그 트랙 -->
                     <StackPanel x:Name="Inspector" Visibility="{Binding HasAudioSelection, Converter={StaticResource Visible}}">
-                        <TextBlock x:Name="InspectorTitle" Text="{Binding InspectorTitle}" FontWeight="Medium" Margin="0,0,0,12" />
+                        <TextBlock x:Name="InspectorTitle" Text="{Binding InspectorTitle}" Style="{StaticResource Title}" />
 
                         <DockPanel>
                             <Button x:Name="VolumeKeyButton" DockPanel.Dock="Right" Content="{Binding VolumeKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Volume"
-                                    Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
+                                    Style="{StaticResource Key}" ToolTip="재생 위치에 키프레임 찍기·지우기 (◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음)" />
                             <TextBox x:Name="ClipVolumeBox" DockPanel.Dock="Right" Text="{Binding ClipVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="볼륨 (%)" Style="{StaticResource Label}" ToolTip="0~200. 선택한 오디오 클립 모두에 적용됩니다." />
                         </DockPanel>
@@ -514,7 +641,8 @@
                         <Button x:Name="ApplyToTrackButton" Content="이 트랙의 모든 클립에 적용" Command="{Binding ApplyToTrackCommand}" Margin="0,0,0,16"
                                 ToolTip="이 클립의 볼륨과 페이드를 같은 트랙의 모든 클립에 복사합니다" />
 
-                        <TextBlock Text="트랙" FontWeight="Medium" Margin="0,0,0,12" />
+                        <Border Style="{StaticResource Divider}" />
+                        <TextBlock Text="트랙" Style="{StaticResource Title}" />
                         <DockPanel>
                             <TextBox x:Name="TrackVolumeBox" DockPanel.Dock="Right" Text="{Binding TrackVolume, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="트랙 볼륨 (%)" Style="{StaticResource Label}" />
@@ -529,10 +657,11 @@
                             <TextBox x:Name="DuckLevelBox" DockPanel.Dock="Right" Text="{Binding DuckLevel, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="감쇠 중 볼륨 (%)" Style="{StaticResource Label}" />
                         </DockPanel>
+                        <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
                     <!-- 키프레임과 애니메이션 프리셋 -->
-                    <StackPanel x:Name="AnimationInspector" Margin="0,16,0,0">
+                    <StackPanel x:Name="AnimationInspector">
                         <StackPanel.Style>
                             <Style TargetType="StackPanel">
                                 <Style.Triggers>
@@ -542,7 +671,7 @@
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
-                        <TextBlock Text="애니메이션" FontWeight="Medium" Margin="0,0,0,12" />
+                        <TextBlock Text="애니메이션" Style="{StaticResource Title}" />
                         <DockPanel>
                             <Button x:Name="NextKeyButton" DockPanel.Dock="Right" Content="다음 ◆" Command="{Binding JumpKeyframeCommand}" CommandParameter="1" Margin="4,0,0,0" Padding="8,4" />
                             <Button x:Name="PreviousKeyButton" DockPanel.Dock="Right" Content="◆ 이전" Command="{Binding JumpKeyframeCommand}" CommandParameter="-1" Margin="0" Padding="8,4" />
@@ -570,7 +699,7 @@
         </Grid>
 
         <!-- 프로젝트가 없을 때 -->
-        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="260">
             <StackPanel.Style>
                 <Style TargetType="StackPanel">
                     <Style.Triggers>
@@ -580,73 +709,70 @@
                     </Style.Triggers>
                 </Style>
             </StackPanel.Style>
-            <TextBlock Text="NGvid" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
-            <TextBlock Text="영상 편집기" Foreground="#A7ACB4" HorizontalAlignment="Center" Margin="0,4,0,24" />
-            <Button x:Name="StartNewButton" Content="새 프로젝트" Click="OnNewClick" Style="{StaticResource Primary}" Padding="32,12" Margin="0,0,0,8" />
-            <Button x:Name="StartOpenButton" Content="프로젝트 열기" Click="OnOpenClick" Padding="32,12" Margin="0" />
+            <Border Width="48" Height="48" CornerRadius="12" Background="{StaticResource Accent}" HorizontalAlignment="Center">
+                <Path Data="M6 4 L20 12 L6 20 Z" Fill="#101114" Width="24" Height="24" />
+            </Border>
+            <TextBlock Text="NGvid" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0" />
+            <TextBlock Text="영상 편집기" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,4,0,24" />
+            <Button x:Name="StartNewButton" Content="새 프로젝트" Click="OnNewClick" Style="{StaticResource MainPrimary}" Height="44" Margin="0,0,0,8" />
+            <Button x:Name="StartOpenButton" Content="프로젝트 열기" Click="OnOpenClick" Height="44" Margin="0" />
         </StackPanel>
 
-        <!-- 재생 조작 -->
-        <Border Grid.Row="2" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="0,1,0,0" Padding="16,10"
-                Visibility="{Binding HasProject, Converter={StaticResource Visible}}">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="0,0,10,0">
-                    <Button Content="◀ 1프레임" Command="{Binding StepCommand}" CommandParameter="-1" ToolTip="← 키" />
-                    <Button x:Name="PlayButton" Content="{Binding PlayButtonText}" Command="{Binding PlayPauseCommand}"
-                            MinWidth="84" Style="{StaticResource Primary}" ToolTip="스페이스 키" />
-                    <Button Content="1프레임 ▶" Command="{Binding StepCommand}" CommandParameter="1" ToolTip="→ 키" />
-                </StackPanel>
-
-                <local:AudioMeterView x:Name="Meter" DockPanel.Dock="Right" Width="110" Height="14" Margin="12,0,0,0"
-                                      VerticalAlignment="Center" ToolTip="재생 중인 소리의 좌·우 크기. 빨간색이면 소리가 찢어집니다." />
-                <TextBlock x:Name="TimeLabel" DockPanel.Dock="Right" Text="{Binding TimeText}" Margin="10,0,0,0"
-                           VerticalAlignment="Center" FontFamily="Consolas" />
-
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="16,0,0,0">
-                    <Button Content="시작점" Command="{Binding SetLoopStartCommand}" ToolTip="현재 위치를 반복 구간의 시작으로 (I 키)" />
-                    <Button Content="끝점" Command="{Binding SetLoopEndCommand}" ToolTip="현재 위치를 반복 구간의 끝으로 (O 키)" />
-                    <CheckBox x:Name="LoopCheck" Content="구간 반복" IsChecked="{Binding IsLooping}" Focusable="False"
-                              Foreground="#E6E7EA" VerticalAlignment="Center" Margin="4,0,8,0" ToolTip="L 키" />
-                    <TextBlock Text="{Binding LoopText}" VerticalAlignment="Center" Foreground="#A7ACB4" FontFamily="Consolas" />
-                </StackPanel>
-
-                <Slider x:Name="PositionSlider" Minimum="0" Maximum="{Binding LastFrameSeconds}"
-                        Value="{Binding PositionSeconds}" Focusable="False"
-                        IsMoveToPointEnabled="True" VerticalAlignment="Center" />
-            </DockPanel>
-        </Border>
-
         <!-- 타임라인 -->
-        <Border Grid.Row="3" Background="#17181C" BorderBrush="#2A2D33" BorderThickness="0,1,0,0"
+        <Border Grid.Row="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0"
                 Visibility="{Binding HasProject, Converter={StaticResource Visible}}">
             <DockPanel>
-                <DockPanel DockPanel.Dock="Top" Margin="12,6">
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <TextBlock Text="확대" Foreground="#A7ACB4" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <Slider x:Name="ZoomSlider" Minimum="0" Maximum="1" Value="{Binding TimelineZoom}" Width="160"
-                                Focusable="False" VerticalAlignment="Center" ToolTip="Ctrl + 마우스 휠" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <ToggleButton x:Name="SnapButton" Content="스냅" IsChecked="{Binding SnapEnabled}" Style="{StaticResource Toggle}"
-                                      ToolTip="재생 위치선과 클립이 클립 경계·마커에 달라붙습니다" />
-                        <Button x:Name="AddMarkerButton" Content="마커 추가" Command="{Binding AddMarkerCommand}" ToolTip="M 키" />
-                        <Button x:Name="AddTrackButton" Content="＋ 트랙" Click="OnAddTrackClick">
-                            <Button.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="영상 트랙" Command="{Binding AddTrackCommand}" CommandParameter="video" />
-                                    <MenuItem Header="오디오 트랙" Command="{Binding AddTrackCommand}" CommandParameter="audio" />
-                                    <MenuItem Header="자막 트랙" Command="{Binding AddTrackCommand}" CommandParameter="caption" />
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
-                    </StackPanel>
-                </DockPanel>
+                <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <TextBlock Text="확대" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Slider x:Name="ZoomSlider" Minimum="0" Maximum="1" Value="{Binding TimelineZoom}" Width="140"
+                                    Focusable="False" VerticalAlignment="Center" ToolTip="Ctrl + 마우스 휠" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="SplitButton" Style="{StaticResource MainGhost}" Command="{Binding SplitCommand}" Margin="0,0,4,0"
+                                    AutomationProperties.Name="분할" ToolTip="선택한 클립을 재생 위치에서 분할 (Ctrl+K)">
+                                <Path Style="{StaticResource Icon}" StrokeThickness="1.5" Width="14" Height="14"
+                                      Data="M2 11 A2 2 0 1 0 6 11 A2 2 0 1 0 2 11 M8 11 A2 2 0 1 0 12 11 A2 2 0 1 0 8 11 M5 9 L10 2 M9 9 L4 2" />
+                            </Button>
+                            <ToggleButton x:Name="SnapButton" IsChecked="{Binding SnapEnabled}" Style="{StaticResource Toggle}" Width="32" Height="32" Margin="0,0,4,0"
+                                          AutomationProperties.Name="스냅" ToolTip="스냅: 재생 위치선과 클립이 클립 경계·마커에 달라붙습니다">
+                                <Path Style="{StaticResource Icon}" StrokeThickness="1.5" Width="14" Height="14" Data="M3 2 V7 A4 4 0 0 0 11 7 V2 M3 4 H5 M9 4 H11" />
+                            </ToggleButton>
+                            <Button x:Name="AddMarkerButton" Style="{StaticResource MainGhost}" Command="{Binding AddMarkerCommand}" Margin="0"
+                                    AutomationProperties.Name="마커 추가" ToolTip="재생 위치에 마커 추가 (M)">
+                                <Path Style="{StaticResource Icon}" StrokeThickness="1.5" Width="14" Height="14" Data="M3 2 H11 V9 L7 12 L3 9 Z" />
+                            </Button>
+                            <Border Width="1" Height="20" Background="{StaticResource Line}" Margin="10,0" />
+                            <Button x:Name="AddTrackButton" Content="＋ 트랙" Click="OnAddTrackClick" Style="{StaticResource MainOutline}" Height="32" Padding="10,0">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="영상 트랙" Command="{Binding AddTrackCommand}" CommandParameter="video" />
+                                        <MenuItem Header="오디오 트랙" Command="{Binding AddTrackCommand}" CommandParameter="audio" />
+                                        <MenuItem Header="자막 트랙" Command="{Binding AddTrackCommand}" CommandParameter="caption" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- 오디오 미터 -->
+                <Border DockPanel.Dock="Right" Width="56" BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0" Padding="0,10"
+                        ToolTip="재생 중인 소리의 좌·우 크기. 빨간색이면 소리가 찢어집니다.">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="dB" FontSize="10" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                        <TextBlock DockPanel.Dock="Bottom" Text="L  R" FontSize="10" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                        <local:AudioMeterView x:Name="Meter" HorizontalAlignment="Center" />
+                    </DockPanel>
+                </Border>
 
                 <ScrollBar x:Name="TimelineScroll" DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="180,0,0,0"
                            ValueChanged="OnTimelineScroll" Focusable="False" />
 
-                <!-- shortcut: 트랙이 많아 세로로 스크롤하면 시간 눈금도 함께 올라간다. 불편하면 눈금을 따로 고정한다. -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="268" Focusable="False">
+                <!-- 높이는 눈금 + 트랙 4개로 고정한다. 트랙이 더 많으면 세로로 스크롤한다. -->
+                <!-- shortcut: 세로로 스크롤하면 시간 눈금도 함께 올라간다. 불편하면 눈금을 따로 고정한다. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="220" Focusable="False">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180" />
@@ -654,11 +780,11 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <Border Height="28" BorderBrush="#2A2D33" BorderThickness="0,0,1,1" />
+                            <Border Height="28" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,1" />
                             <ItemsControl x:Name="TrackHeaders" ItemsSource="{Binding Tracks}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Height="48" Background="#191B1F" BorderBrush="#23262C" BorderThickness="0,0,1,1" Padding="8,0,4,0">
+                                        <Border Height="48" Background="#191B1F" BorderBrush="#23262C" BorderThickness="0,0,1,1" Padding="10,0,6,0">
                                             <Border.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem Header="위로" Click="OnTrackUpClick" />
@@ -677,18 +803,24 @@
                                             <DockPanel>
                                                 <Border DockPanel.Dock="Left" Width="4" Height="24" CornerRadius="2" Background="{Binding Color}" Margin="0,0,6,0" />
                                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <ToggleButton Content="잠금" IsChecked="{Binding Locked}" Style="{StaticResource Toggle}" FontSize="10"
-                                                                  ToolTip="잠그면 이 트랙의 클립을 편집할 수 없습니다" />
-                                                    <ToggleButton Content="숨김" IsChecked="{Binding Hidden}" Style="{StaticResource Toggle}" FontSize="10"
+                                                    <ToggleButton IsChecked="{Binding Locked}" Style="{StaticResource Toggle}"
+                                                                  AutomationProperties.Name="잠금" ToolTip="잠금: 이 트랙의 클립을 편집할 수 없게 합니다">
+                                                        <Path Style="{StaticResource Icon}" StrokeThickness="1.3" Width="12" Height="12"
+                                                              Data="M2 5 H10 V11 H2 Z M4 5 V3.5 A2 2 0 0 1 8 3.5 V5" />
+                                                    </ToggleButton>
+                                                    <ToggleButton IsChecked="{Binding Hidden}" Style="{StaticResource Toggle}"
                                                                   Visibility="{Binding IsVisual, Converter={StaticResource Visible}}"
-                                                                  ToolTip="숨기면 화면에 그리지 않습니다" />
-                                                    <ToggleButton Content="M" IsChecked="{Binding Muted}" Style="{StaticResource Toggle}" FontSize="10" FontWeight="Bold"
+                                                                  AutomationProperties.Name="숨김" ToolTip="숨김: 화면에 그리지 않습니다">
+                                                        <Path Style="{StaticResource Icon}" StrokeThickness="1.3" Width="12" Height="12"
+                                                              Data="M1 6 C3 2.5 9 2.5 11 6 C9 9.5 3 9.5 1 6 Z M4.5 6 A1.5 1.5 0 1 0 7.5 6 A1.5 1.5 0 1 0 4.5 6" />
+                                                    </ToggleButton>
+                                                    <ToggleButton Content="M" IsChecked="{Binding Muted}" Style="{StaticResource Toggle}" FontSize="11" FontWeight="Bold"
                                                                   Visibility="{Binding IsAudio, Converter={StaticResource Visible}}" ToolTip="음소거" />
-                                                    <ToggleButton Content="S" IsChecked="{Binding Solo}" Style="{StaticResource Toggle}" FontSize="10" FontWeight="Bold"
+                                                    <ToggleButton Content="S" IsChecked="{Binding Solo}" Style="{StaticResource Toggle}" FontSize="11" FontWeight="Bold"
                                                                   Visibility="{Binding IsAudio, Converter={StaticResource Visible}}" ToolTip="솔로: 이 트랙만 듣기" />
                                                 </StackPanel>
                                                 <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown"
-                                                         Background="Transparent" Foreground="#E6E7EA" BorderThickness="0" CaretBrush="#E6E7EA"
+                                                         Background="Transparent" BorderThickness="0" Padding="0"
                                                          FontSize="12" VerticalAlignment="Center" />
                                             </DockPanel>
                                         </Border>
@@ -704,7 +836,7 @@
         </Border>
 
         <!-- 알림 -->
-        <TextBlock Grid.Row="4" x:Name="StatusLabel" Text="{Binding StatusText}" Foreground="#FFB454" Margin="16,6" TextWrapping="Wrap">
+        <TextBlock Grid.Row="3" x:Name="StatusLabel" Text="{Binding StatusText}" Foreground="#FFB454" Margin="16,6" TextWrapping="Wrap">
             <TextBlock.Style>
                 <Style TargetType="TextBlock">
                     <Style.Triggers>

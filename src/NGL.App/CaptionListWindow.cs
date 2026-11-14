@@ -44,7 +44,7 @@ public sealed class CaptionRow(MainViewModel owner, CaptionClip clip)
 public sealed class CaptionListWindow : Window
 {
     private readonly MainViewModel _owner;
-    private readonly ComboBox _tracks = new() { MinWidth = 140, Margin = new Thickness(0, 0, 8, 0) };
+    private readonly ComboBox _tracks = new() { MinWidth = 140, Height = 32, Margin = new Thickness(0, 0, 8, 0) };
     private readonly DataGrid _grid = new()
     {
         AutoGenerateColumns = false,
@@ -52,18 +52,19 @@ public sealed class CaptionListWindow : Window
         CanUserDeleteRows = false,
         SelectionMode = DataGridSelectionMode.Single,
         HeadersVisibility = DataGridHeadersVisibility.Column,
-        Margin = new Thickness(0, 10, 0, 0),
+        Margin = new Thickness(0, 12, 0, 0),
     };
 
     public CaptionListWindow(MainViewModel owner)
     {
         _owner = owner;
         Title = "자막 목록";
-        Width = 720;
+        Width = 820;
         Height = 520;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = new SolidColorBrush(Color.FromRgb(0x17, 0x18, 0x1C));
-        FontSize = 14;
+        DialogParts.Apply(this);
+        ShowInTaskbar = true;
+
 
         _grid.Columns.Add(new DataGridTextColumn { Header = "시작", Binding = new Binding(nameof(CaptionRow.Start)), Width = 110 });
         _grid.Columns.Add(new DataGridTextColumn { Header = "끝", Binding = new Binding(nameof(CaptionRow.End)), Width = 110 });
@@ -84,7 +85,7 @@ public sealed class CaptionListWindow : Window
         buttons.Children.Add(Button("SRT 내보내기", "CaptionExportButton", Export));
         buttons.Children.Add(Button("모든 자막에 스타일 적용", "CaptionStyleButton", ApplyStyle));
 
-        var panel = new DockPanel { Margin = new Thickness(16) };
+        var panel = new DockPanel { Margin = new Thickness(20) };
         DockPanel.SetDock(buttons, Dock.Top);
         panel.Children.Add(buttons);
         panel.Children.Add(_grid);
@@ -152,7 +153,7 @@ public sealed class CaptionListWindow : Window
 
     private static Button Button(string text, string automationId, Action click)
     {
-        var button = new Button { Content = text, Padding = new Thickness(12, 6, 12, 6), Margin = new Thickness(0, 0, 6, 0) };
+        var button = new Button { Content = text, Height = 32, Margin = new Thickness(0, 0, 6, 0) };
         AutomationProperties.SetAutomationId(button, automationId);
         button.Click += (_, _) => click();
         return button;

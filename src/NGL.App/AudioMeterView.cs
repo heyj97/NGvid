@@ -3,13 +3,15 @@ using System.Windows.Media;
 
 namespace NGL.App;
 
-/// <summary>재생 중인 소리의 좌·우 크기를 막대로 보여준다. 최대치를 넘으면 빨갛게 표시한다.</summary>
+/// <summary>재생 중인 소리의 좌·우 크기를 세로 막대 둘로 보여준다. 최대치를 넘으면 빨갛게 표시한다.</summary>
 public sealed class AudioMeterView : FrameworkElement
 {
-    private const double FloorDecibels = -60; // 막대의 왼쪽 끝
+    private const double FloorDecibels = -60; // 막대의 아래쪽 끝
+    private const double BarWidth = 8;
+    private const double Gap = 4;
 
-    private static readonly Brush Back = Brushes.Black;
-    private static readonly Brush Normal = new SolidColorBrush(Color.FromRgb(0x3F, 0xA8, 0x7A));
+    private static readonly Brush Back = new SolidColorBrush(Color.FromRgb(0x23, 0x26, 0x2C));
+    private static readonly Brush Normal = new SolidColorBrush(Color.FromRgb(0x3F, 0xB9, 0x7A));
     private static readonly Brush Clipping = new SolidColorBrush(Color.FromRgb(0xFF, 0x5A, 0x5A));
 
     private double _left;
@@ -29,21 +31,22 @@ public sealed class AudioMeterView : FrameworkElement
         if (_left != oldLeft || _right != oldRight) InvalidateVisual();
     }
 
+    protected override Size MeasureOverride(Size availableSize) => new(BarWidth * 2 + Gap, 0);
+
     protected override void OnRender(DrawingContext dc)
     {
-        var barHeight = (ActualHeight - 2) / 2;
-        DrawBar(dc, _left, 0, barHeight);
-        DrawBar(dc, _right, barHeight + 2, barHeight);
+        DrawBar(dc, _left, 0);
+        DrawBar(dc, _right, BarWidth + Gap);
     }
 
-    private void DrawBar(DrawingContext dc, double level, double top, double height)
+    private void DrawBar(DrawingContext dc, double level, double left)
     {
-        dc.DrawRectangle(Back, null, new Rect(0, top, ActualWidth, height));
+        dc.DrawRoundedRectangle(Back, null, new Rect(left, 0, BarWidth, ActualHeight), 2, 2);
         if (level <= 0) return;
 
         // 소리 크기는 데시벨로 바꿔야 귀에 들리는 크기와 막대 길이가 비슷해진다.
         var decibels = 20 * Math.Log10(level);
-        var fraction = Math.Clamp((decibels - FloorDecibels) / -FloorDecibels, 0, 1);
-        dc.DrawRectangle(level > 1 ? Clipping : Normal, null, new Rect(0, top, ActualWidth * fraction, height));
+        var height = ActualHeight * Math.Clamp((decibels - FloorDecibels) / -FloorDecibels, 0, 1);
+        dc.DrawRoundedRectangle(level > 1 ? Clipping : Normal, null, new Rect(left, ActualHeight - height, BarWidth, height), 2, 2);
     }
 }

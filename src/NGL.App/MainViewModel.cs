@@ -28,7 +28,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _statusText = "";
     [ObservableProperty] private double _positionSeconds;
     [ObservableProperty] private double _lastFrameSeconds;
-    [ObservableProperty] private string _timeText = "00:00:00:00 / 00:00:00:00";
+    [ObservableProperty] private string _positionText = "00:00:00:00";
+    [ObservableProperty] private string _totalText = "00:00:00:00";
     [ObservableProperty] private string _loopText = "";
     [ObservableProperty] private bool _isLooping;
     [ObservableProperty] private string _audioWarning = "";
@@ -298,6 +299,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Tick();
     }
 
+    /// <summary>처음(start)이나 끝(end)으로 간다.</summary>
+    [RelayCommand]
+    private void GoTo(string where)
+    {
+        if (_engine is null) return;
+        _engine.Seek(where == "end" ? _engine.LastFrameTime : TimeSpan.Zero);
+        Tick();
+    }
+
     /// <summary>현재 위치를 반복 구간의 시작으로 정한다.</summary>
     [RelayCommand]
     private void SetLoopStart()
@@ -344,7 +354,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _followingEngine = false;
 
         IsPlaying = _engine.IsPlaying;
-        TimeText = $"{Timecode(Project.Sequence, position)} / {Timecode(Project.Sequence, Project.Sequence.Duration)}";
+        PositionText = Timecode(Project.Sequence, position);
+        TotalText = Timecode(Project.Sequence, Project.Sequence.Duration);
         FollowAnimation();
     }
 

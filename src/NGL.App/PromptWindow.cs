@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace NGL.App;
 
@@ -9,16 +8,11 @@ public static class PromptWindow
 {
     public static string? Ask(Window owner, string title, string value)
     {
-        var box = new TextBox { Text = value, Padding = new Thickness(8, 6, 8, 6), MinWidth = 280 };
-        var ok = new Button { Content = "확인", IsDefault = true, Padding = new Thickness(16, 6, 16, 6), Margin = new Thickness(8, 0, 0, 0) };
-        var cancel = new Button { Content = "취소", IsCancel = true, Padding = new Thickness(16, 6, 16, 6) };
-        var buttons = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 12, 0, 0),
-            Children = { cancel, ok },
-        };
+        var box = new TextBox { Text = value, Height = 40, MinWidth = 320 };
+        var ok = DialogParts.Button("확인", primary: true);
+        ok.IsDefault = true;
+        var cancel = DialogParts.Button("취소");
+        cancel.IsCancel = true;
 
         var window = new Window
         {
@@ -26,11 +20,9 @@ public static class PromptWindow
             Owner = owner,
             SizeToContent = SizeToContent.WidthAndHeight,
             ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ShowInTaskbar = false,
-            Background = new SolidColorBrush(Color.FromRgb(0x17, 0x18, 0x1C)),
-            Content = new StackPanel { Margin = new Thickness(20), Children = { box, buttons } },
+            Content = DialogParts.Layout(box, cancel, ok),
         };
+        DialogParts.Apply(window);
         ok.Click += (_, _) => window.DialogResult = true;
         window.Loaded += (_, _) =>
         {

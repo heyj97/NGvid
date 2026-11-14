@@ -33,8 +33,8 @@ public sealed class TimelineView : FrameworkElement
     private static readonly Pen TickPen = FrozenPen("#3A3E46", 1);
     private static readonly Pen PlayheadPen = FrozenPen("#FF8A3D", 1.5);
     private static readonly Pen WavePen = FrozenPen("#99FFFFFF", 1);
-    private static readonly Typeface TextFace = new("Segoe UI");
-    private static readonly Typeface TimeFace = new("Consolas");
+    private static readonly Typeface TextFace = new("Pretendard, Noto Sans KR, Malgun Gothic");
+    private static readonly Typeface TimeFace = new("IBM Plex Mono, Cascadia Mono, Consolas");
 
     private static readonly Pen SelectedPen = FrozenPen("#FFFFFF", 2);
     private static readonly Pen GhostPen = DashedPen("#FFFFFF", 1.5);

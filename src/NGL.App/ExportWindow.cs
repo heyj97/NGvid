@@ -13,23 +13,21 @@ namespace NGL.App;
 /// <summary>내보내기 창: 파일 위치와 품질을 고르고, 진행률을 보며 취소할 수 있다.</summary>
 public sealed class ExportWindow : Window
 {
-    private static readonly Brush Panel = new SolidColorBrush(Color.FromRgb(0x17, 0x18, 0x1C));
-    private static readonly Brush Text = new SolidColorBrush(Color.FromRgb(0xE6, 0xE7, 0xEA));
-    private static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0xA7, 0xAC, 0xB4));
+    private static Brush Muted => DialogParts.Brush("Muted");
 
     private readonly Project _project;
     private readonly string _projectFolder;
     private readonly IExporter _exporter = new Mp4Exporter();
 
-    private readonly TextBox _path = new() { Padding = new Thickness(8, 6, 8, 6) };
-    private readonly ComboBox _quality = new() { Padding = new Thickness(8, 6, 8, 6), ItemsSource = new[] { "낮음", "보통", "높음" }, SelectedIndex = 1 };
+    private readonly TextBox _path = new() { Height = 40, Padding = new Thickness(12, 0, 12, 0) };
+    private readonly ComboBox _quality = new() { Height = 40, Width = 200, HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(12, 0, 12, 0), ItemsSource = new[] { "낮음", "보통", "높음" }, SelectedIndex = 1 };
     private readonly TextBlock _estimate = new() { Foreground = Muted, Margin = new Thickness(0, 6, 0, 0) };
-    private readonly ProgressBar _progress = new() { Height = 10, Minimum = 0, Maximum = 1, Margin = new Thickness(0, 16, 0, 0) };
+    private readonly ProgressBar _progress = new() { Minimum = 0, Maximum = 1, Margin = new Thickness(0, 16, 0, 0) };
     private readonly TextBlock _status = new() { Foreground = Muted, Margin = new Thickness(0, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
-    private readonly Button _browse = NewButton("찾아보기");
-    private readonly Button _start = NewButton("내보내기 시작");
-    private readonly Button _cancel = NewButton("닫기");
-    private readonly Button _openFolder = NewButton("폴더 열기");
+    private readonly Button _browse = DialogParts.Button("찾아보기");
+    private readonly Button _start = DialogParts.Button("내보내기 시작", primary: true);
+    private readonly Button _cancel = DialogParts.Button("닫기");
+    private readonly Button _openFolder = DialogParts.Button("폴더 열기");
 
     private CancellationTokenSource? _running;
 
@@ -43,17 +41,10 @@ public sealed class ExportWindow : Window
         Width = 560;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        ShowInTaskbar = false;
-        Background = Panel;
-        Foreground = Text;
-        FontSize = 14;
+        DialogParts.Apply(this);
 
         _path.Text = Path.Combine(projectFolder, project.Name + ".mp4");
         _openFolder.Visibility = Visibility.Collapsed;
-        _start.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0x8D, 0xFF));
-        _start.Foreground = new SolidColorBrush(Color.FromRgb(0x0B, 0x0C, 0x0E));
-        _start.FontWeight = FontWeights.Bold;
 
         // 자동 시험이 찾을 수 있도록 이름을 붙인다.
         AutomationProperties.SetAutomationId(_path, "ExportPathBox");
@@ -68,27 +59,21 @@ public sealed class ExportWindow : Window
         pathRow.Children.Add(_browse);
         pathRow.Children.Add(_path);
 
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
-        buttons.Children.Add(_openFolder);
-        buttons.Children.Add(_cancel);
-        buttons.Children.Add(_start);
 
-        Content = new StackPanel
+        Content = DialogParts.Layout(new StackPanel
         {
-            Margin = new Thickness(24),
             Children =
             {
                 Label("파일"),
                 pathRow,
-                Label($"규격  ·  {sequence.Preset.Width}×{sequence.Preset.Height}, {sequence.FrameRate}fps, H.264 (시퀀스 설정을 따릅니다)", 16),
-                Label("품질", 16),
+                Label($"규격  ·  {sequence.Preset.Width}×{sequence.Preset.Height}, {sequence.FrameRate}fps, H.264 (시퀀스 설정을 따릅니다)", 20),
+                Label("품질", 20),
                 _quality,
                 _estimate,
                 _progress,
                 _status,
-                buttons,
             },
-        };
+        }, _openFolder, _cancel, _start);
 
         _browse.Click += (_, _) => Browse();
         _start.Click += async (_, _) => await RunAsync();
@@ -191,15 +176,6 @@ public sealed class ExportWindow : Window
     }
 
     private static TextBlock Label(string text, double top = 0) =>
-        new() { Text = text, Foreground = Muted, Margin = new Thickness(0, top, 0, 6), TextWrapping = TextWrapping.Wrap };
+        new() { Text = text, Foreground = Muted, FontSize = 13, Margin = new Thickness(0, top, 0, 8), TextWrapping = TextWrapping.Wrap };
 
-    private static Button NewButton(string text) => new()
-    {
-        Content = text,
-        Padding = new Thickness(16, 8, 16, 8),
-        Margin = new Thickness(8, 0, 0, 0),
-        Background = new SolidColorBrush(Color.FromRgb(0x26, 0x29, 0x2F)),
-        Foreground = Text,
-        BorderThickness = new Thickness(0),
-    };
 }
