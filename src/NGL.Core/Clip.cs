@@ -32,7 +32,70 @@ public abstract class MediaClip : Clip
     public TimeSpan SourceStart { get; set; }
 }
 
-public sealed class VideoClip : MediaClip;
+/// <summary>겹치는 아래 화면과 색을 섞는 방식.</summary>
+public enum BlendMode
+{
+    Normal,
+    Multiply,
+    Screen,
+    Overlay,
+    Add,
+}
+
+/// <summary>시퀀스와 비율이 다른 원본을 화면에 놓는 방식.</summary>
+public enum FitMode
+{
+    /// <summary>전체가 보이게 맞춘다. 남는 곳은 비어 있다.</summary>
+    Fit,
+
+    /// <summary>화면을 꽉 채운다. 넘치는 부분은 잘린다.</summary>
+    Fill,
+}
+
+/// <summary>화면에 그려지는 클립(영상·이미지)의 위치·크기·모양.</summary>
+public abstract class VisualClip : MediaClip
+{
+    private double _scale = 1;
+    private double _opacity = 1;
+    private double _cropLeft, _cropTop, _cropRight, _cropBottom;
+
+    /// <summary>화면 가운데에서 오른쪽으로 옮긴 거리(시퀀스 픽셀).</summary>
+    public double X { get; set; }
+
+    /// <summary>화면 가운데에서 아래로 옮긴 거리(시퀀스 픽셀).</summary>
+    public double Y { get; set; }
+
+    /// <summary>크기 배율. 1이 화면 맞춤 그대로이고 0.1~4(10~400%)까지.</summary>
+    public double Scale
+    {
+        get => _scale;
+        set => _scale = Math.Clamp(value, 0.1, 4);
+    }
+
+    /// <summary>시계 방향 회전(도).</summary>
+    public double Rotation { get; set; }
+
+    /// <summary>불투명도. 1이면 완전히 보이고 0이면 투명하다.</summary>
+    public double Opacity
+    {
+        get => _opacity;
+        set => _opacity = Math.Clamp(value, 0, 1);
+    }
+
+    public BlendMode Blend { get; set; }
+    public FitMode Fit { get; set; }
+
+    // 가장자리에서 잘라낼 비율(0~0.95). 마주 보는 두 쪽을 합쳐 전부 잘라낼 수는 없다.
+    public double CropLeft { get => _cropLeft; set => _cropLeft = Math.Clamp(value, 0, 0.95 - _cropRight); }
+    public double CropTop { get => _cropTop; set => _cropTop = Math.Clamp(value, 0, 0.95 - _cropBottom); }
+    public double CropRight { get => _cropRight; set => _cropRight = Math.Clamp(value, 0, 0.95 - _cropLeft); }
+    public double CropBottom { get => _cropBottom; set => _cropBottom = Math.Clamp(value, 0, 0.95 - _cropTop); }
+
+    public bool FlipHorizontal { get; set; }
+    public bool FlipVertical { get; set; }
+}
+
+public sealed class VideoClip : VisualClip;
 
 public sealed class AudioClip : MediaClip
 {
@@ -52,7 +115,7 @@ public sealed class AudioClip : MediaClip
     public TimeSpan FadeOut { get; set; }
 }
 
-public sealed class ImageClip : MediaClip;
+public sealed class ImageClip : VisualClip;
 
 /// <summary>제목·설명 같은 자유 텍스트. 영상 트랙에 올린다.</summary>
 public sealed class TextClip : Clip

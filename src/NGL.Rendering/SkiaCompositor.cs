@@ -15,13 +15,14 @@ public sealed class SkiaCompositor : IFrameCompositor
 {
     private static readonly SKSamplingOptions Sampling = new(SKFilterMode.Linear);
     private readonly SKPaint _background = new() { Color = SKColors.Black };
+    private readonly SKPaint _layer = new();
 
     public void Render(SKCanvas canvas, Sequence sequence, TimeSpan time, Func<Clip, SKImage?> imageOf)
     {
         var frame = SKRect.Create(sequence.Preset.Width, sequence.Preset.Height);
 
         canvas.Save();
-        canvas.ClipRect(frame);
+        canvas.ClipRect(frame); // 프레임 밖으로 나간 부분은 잘린다
         canvas.DrawRect(frame, _background);
 
         // 목록의 첫 트랙이 맨 위에 보여야 하므로 마지막 트랙부터 그린다.
@@ -31,21 +32,57 @@ public sealed class SkiaCompositor : IFrameCompositor
 
             foreach (var clip in track.Clips)
             {
-                if (!clip.Range.Contains(time)) continue;
+                if (!clip.Range.Contains(time) || imageOf(clip) is not { } image) continue;
 
-                var image = imageOf(clip);
-                if (image is not null) canvas.DrawImage(image, Fit(image.Width, image.Height, frame), Sampling);
+                if (clip is VisualClip visual) Draw(canvas, image, visual, frame);
+                else canvas.DrawImage(image, Fit(image.Width, image.Height, frame), Sampling);
             }
         }
 
         canvas.Restore();
     }
 
+    /// <summary>클립의 자르기·화면 맞춤·위치·회전·크기·뒤집기·불투명도·블렌드를 적용해 그린다.</summary>
+    private void Draw(SKCanvas canvas, SKImage image, VisualClip clip, SKRect frame)
+    {
+        var source = SKRect.Create(
+            (float)(image.Width * clip.CropLeft),
+            (float)(image.Height * clip.CropTop),
+            (float)(image.Width * (1 - clip.CropLeft - clip.CropRight)),
+            (float)(image.Height * (1 - clip.CropTop - clip.CropBottom)));
+        var size = PlacedSize(source.Width, source.Height, frame, clip.Fit);
+
+        canvas.Save();
+        canvas.Translate(frame.MidX + (float)clip.X, frame.MidY + (float)clip.Y);
+        canvas.RotateDegrees((float)clip.Rotation);
+        canvas.Scale((float)clip.Scale * (clip.FlipHorizontal ? -1 : 1), (float)clip.Scale * (clip.FlipVertical ? -1 : 1));
+
+        _layer.Color = SKColors.White.WithAlpha((byte)Math.Round(clip.Opacity * 255));
+        _layer.BlendMode = clip.Blend switch
+        {
+            BlendMode.Multiply => SKBlendMode.Multiply,
+            BlendMode.Screen => SKBlendMode.Screen,
+            BlendMode.Overlay => SKBlendMode.Overlay,
+            BlendMode.Add => SKBlendMode.Plus,
+            _ => SKBlendMode.SrcOver,
+        };
+        canvas.DrawImage(image, source, SKRect.Create(-size.Width / 2, -size.Height / 2, size.Width, size.Height), Sampling, _layer);
+        canvas.Restore();
+    }
+
+    /// <summary>크기 100%일 때 화면에 놓이는 크기: 맞추기는 전체가 보이게, 채우기는 화면이 꽉 차게.</summary>
+    public static SKSize PlacedSize(float width, float height, SKRect bounds, FitMode fit)
+    {
+        var horizontal = bounds.Width / width;
+        var vertical = bounds.Height / height;
+        var scale = fit == FitMode.Fill ? Math.Max(horizontal, vertical) : Math.Min(horizontal, vertical);
+        return new SKSize(width * scale, height * scale);
+    }
+
     /// <summary>비율을 유지한 채 전체가 보이도록 가운데에 맞춘 영역(맞추기).</summary>
     public static SKRect Fit(float width, float height, SKRect bounds)
     {
-        var scale = Math.Min(bounds.Width / width, bounds.Height / height);
-        var size = new SKSize(width * scale, height * scale);
+        var size = PlacedSize(width, height, bounds, FitMode.Fit);
         return SKRect.Create(bounds.MidX - size.Width / 2, bounds.MidY - size.Height / 2, size.Width, size.Height);
     }
 }
