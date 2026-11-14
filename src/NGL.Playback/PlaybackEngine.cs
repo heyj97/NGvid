@@ -80,6 +80,9 @@ public sealed class PlaybackEngine : IDisposable
         set { lock (_stateGate) _loopRange = value; }
     }
 
+    /// <summary>재생 중인 소리의 좌·우 크기.</summary>
+    public AudioMeter Meter => _audio.Meter;
+
     /// <summary>미리보기 화질. 낮추면 디코딩한 프레임을 작게 만들어 재생이 가벼워진다.</summary>
     public PreviewQuality Quality
     {

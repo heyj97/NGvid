@@ -34,7 +34,23 @@ public abstract class MediaClip : Clip
 
 public sealed class VideoClip : MediaClip;
 
-public sealed class AudioClip : MediaClip;
+public sealed class AudioClip : MediaClip
+{
+    private double _volume = 1;
+
+    /// <summary>볼륨. 1이 원래 크기이고 0~2(200%)까지.</summary>
+    public double Volume
+    {
+        get => _volume;
+        set => _volume = Math.Clamp(value, 0, 2);
+    }
+
+    /// <summary>클립의 시작에서 이 시간 동안 소리가 서서히 커진다.</summary>
+    public TimeSpan FadeIn { get; set; }
+
+    /// <summary>클립의 끝에서 이 시간 동안 소리가 서서히 작아진다.</summary>
+    public TimeSpan FadeOut { get; set; }
+}
 
 public sealed class ImageClip : MediaClip;
 

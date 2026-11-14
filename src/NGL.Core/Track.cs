@@ -35,7 +35,30 @@ public sealed class VideoTrack : Track
 
 public sealed class AudioTrack : Track
 {
+    private double _volume = 1;
+    private double _duckLevel = 0.3;
+
     public AudioTrack() => Color = "#3FA87A";
+
+    /// <summary>트랙 볼륨. 1이 원래 크기이고 0~2(200%)까지. 이 트랙의 모든 클립에 곱해진다.</summary>
+    public double Volume
+    {
+        get => _volume;
+        set => _volume = Math.Clamp(value, 0, 2);
+    }
+
+    /// <summary>
+    /// 자동 감쇠의 기준 트랙(예: 내레이션). 그 트랙에 클립이 있는 동안 이 트랙(예: BGM)의 소리를 줄인다.
+    /// null이면 줄이지 않는다.
+    /// </summary>
+    public Guid? DuckUnder { get; set; }
+
+    /// <summary>자동 감쇠 중의 볼륨 비율(0~1). 0.3이면 30%로 줄인다.</summary>
+    public double DuckLevel
+    {
+        get => _duckLevel;
+        set => _duckLevel = Math.Clamp(value, 0, 1);
+    }
 
     public override bool Accepts(Clip clip) => clip is AudioClip;
 }
