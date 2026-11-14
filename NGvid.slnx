@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NGL.App/NGL.App.csproj" />
+    <Project Path="src/NGL.Audio/NGL.Audio.csproj" />
+    <Project Path="src/NGL.Commands/NGL.Commands.csproj" />
+    <Project Path="src/NGL.Core/NGL.Core.csproj" />
+    <Project Path="src/NGL.Export/NGL.Export.csproj" />
+    <Project Path="src/NGL.IO/NGL.IO.csproj" />
+    <Project Path="src/NGL.Media/NGL.Media.csproj" />
+    <Project Path="src/NGL.Playback/NGL.Playback.csproj" />
+    <Project Path="src/NGL.Rendering/NGL.Rendering.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NGL.Tests/NGL.Tests.csproj" />
+  </Folder>
+</Solution>

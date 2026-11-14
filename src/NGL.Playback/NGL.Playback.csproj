@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NGL.Core\NGL.Core.csproj" />
+    <ProjectReference Include="..\NGL.Rendering\NGL.Rendering.csproj" />
+    <ProjectReference Include="..\NGL.Audio\NGL.Audio.csproj" />
+    <ProjectReference Include="..\NGL.Media\NGL.Media.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

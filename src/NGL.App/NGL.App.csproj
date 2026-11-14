@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NGL.Core\NGL.Core.csproj" />
+    <ProjectReference Include="..\NGL.Commands\NGL.Commands.csproj" />
+    <ProjectReference Include="..\NGL.IO\NGL.IO.csproj" />
+    <ProjectReference Include="..\NGL.Playback\NGL.Playback.csproj" />
+    <ProjectReference Include="..\NGL.Export\NGL.Export.csproj" />
+  </ItemGroup>
+
+  <!-- scripts/install-ffmpeg.ps1로 배치한 FFmpeg DLL을 출력 폴더의 ffmpeg/로 복사한다. -->
+  <ItemGroup>
+    <None Include="..\..\ffmpeg\*.dll" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>
