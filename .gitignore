@@ -489,3 +489,5 @@ $RECYCLE.BIN/
 # NGvid
 /ffmpeg/
 *.tar.xz
+# publish로 만든 실행용 프로그램 폴더
+/builds/
