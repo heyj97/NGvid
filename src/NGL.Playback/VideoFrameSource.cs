@@ -26,18 +26,23 @@ public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposa
     /// 타임라인 시각에 클립이 보여줄 이미지. 원본을 열 수 없으면 null.
     /// 돌려준 이미지는 받은 쪽이 해제한다.
     /// </summary>
-    public SKImage? GetImage(VideoClip clip, TimeSpan timelineTime)
+    public SKImage? GetImage(VideoClip clip, TimeSpan timelineTime) =>
+        GetImage(clip.AssetId, clip.SourceStart + (timelineTime - clip.Range.Start));
+
+    /// <summary>이미지 클립의 그림. 돌려준 이미지는 받은 쪽이 해제한다.</summary>
+    public SKImage? GetImage(ImageClip clip) => GetImage(clip.AssetId, TimeSpan.Zero);
+
+    private SKImage? GetImage(Guid assetId, TimeSpan sourceTime)
     {
-        if (!_decoders.TryGetValue(clip.AssetId, out var decoder))
+        if (!_decoders.TryGetValue(assetId, out var decoder))
         {
-            decoder = Open(clip.AssetId);
-            _decoders.Add(clip.AssetId, decoder);
+            decoder = Open(assetId);
+            _decoders.Add(assetId, decoder);
         }
 
         if (decoder is null) return null;
 
         decoder.Downscale = (int)Quality;
-        var sourceTime = clip.SourceStart + (timelineTime - clip.Range.Start);
         if (decoder.GetFrameAt(sourceTime) is not { } frame) return null;
 
         var info = new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Opaque);

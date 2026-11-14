@@ -21,4 +21,7 @@ public sealed class MediaAsset
 
     /// <summary>원본 길이. 이미지는 0.</summary>
     public TimeSpan Duration { get; set; }
+
+    /// <summary>영상 원본에 소리가 들어 있는가.</summary>
+    public bool HasAudio { get; set; }
 }

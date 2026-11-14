@@ -29,7 +29,8 @@ public static unsafe class MediaProbe
 
             VideoStreamInfo? video = null;
             var videoIndex = ffmpeg.av_find_best_stream(format, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
-            if (videoIndex >= 0)
+            // MP3 등에 들어 있는 표지 그림은 영상으로 치지 않는다.
+            if (videoIndex >= 0 && (format->streams[videoIndex]->disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0)
             {
                 var stream = format->streams[videoIndex];
                 var parameters = stream->codecpar;

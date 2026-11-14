@@ -260,11 +260,17 @@ public sealed class PlaybackEngine : IDisposable
 
             foreach (var clip in track.Clips)
             {
-                if (clip is not VideoClip video || !clip.Range.Contains(time)) continue;
+                if (!clip.Range.Contains(time)) continue;
 
                 try
                 {
-                    if (_video.GetImage(video, time) is { } image) images.Add(clip, image);
+                    var image = clip switch
+                    {
+                        VideoClip video => _video.GetImage(video, time),
+                        ImageClip still => _video.GetImage(still),
+                        _ => null,
+                    };
+                    if (image is not null) images.Add(clip, image);
                 }
                 catch (InvalidDataException)
                 {
