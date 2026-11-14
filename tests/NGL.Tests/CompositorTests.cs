@@ -125,7 +125,8 @@ public class CompositorTests
         foreach (var (timelineFrame, sourceFrame) in new[] { (30, 10), (35, 15), (59, 39), (31, 11) })
         {
             var time = sequence.TimeAt(timelineFrame);
-            using var result = Render(sequence, time, c => frames.GetImage((VideoClip)c, time));
+            using var image = frames.GetImage(clip, time);
+            using var result = Render(sequence, time, _ => image);
 
             var gray = result.GetPixel(960, 540);
             Assert.Equal(sourceFrame, (int)Math.Round(gray.Green * 219.0 / 255.0 / 3));

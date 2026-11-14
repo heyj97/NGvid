@@ -10,41 +10,25 @@ namespace NGL.Playback;
 /// </summary>
 public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposable
 {
-    private sealed class Entry
-    {
-        public IVideoDecoder? Decoder; // 열 수 없는 원본이면 null
-        public SKImage? Image;
-        public TimeSpan ImageTime;
-    }
-
-    private readonly Dictionary<Guid, Entry> _entries = [];
+    private readonly Dictionary<Guid, IVideoDecoder?> _decoders = []; // 열 수 없는 원본이면 null
 
     /// <summary>
     /// 타임라인 시각에 클립이 보여줄 이미지. 원본을 열 수 없으면 null.
-    /// 돌려준 이미지는 이 객체가 소유하며 같은 원본의 다음 프레임을 요청하면 해제된다.
+    /// 돌려준 이미지는 받은 쪽이 해제한다.
     /// </summary>
     public SKImage? GetImage(VideoClip clip, TimeSpan timelineTime)
     {
-        if (!_entries.TryGetValue(clip.AssetId, out var entry))
+        if (!_decoders.TryGetValue(clip.AssetId, out var decoder))
         {
-            entry = new Entry { Decoder = Open(clip.AssetId) };
-            _entries.Add(clip.AssetId, entry);
+            decoder = Open(clip.AssetId);
+            _decoders.Add(clip.AssetId, decoder);
         }
-
-        if (entry.Decoder is null) return null;
 
         var sourceTime = clip.SourceStart + (timelineTime - clip.Range.Start);
-        if (entry.Decoder.GetFrameAt(sourceTime) is not { } frame) return null;
+        if (decoder?.GetFrameAt(sourceTime) is not { } frame) return null;
 
-        if (entry.Image is null || entry.ImageTime != frame.Time)
-        {
-            entry.Image?.Dispose();
-            var info = new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Opaque);
-            entry.Image = SKImage.FromPixelCopy(info, frame.Pixels, frame.Stride);
-            entry.ImageTime = frame.Time;
-        }
-
-        return entry.Image;
+        var info = new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+        return SKImage.FromPixelCopy(info, frame.Pixels, frame.Stride);
     }
 
     private IVideoDecoder? Open(Guid assetId)
@@ -61,12 +45,7 @@ public sealed class VideoFrameSource(Func<Guid, string?> pathOfAsset) : IDisposa
 
     public void Dispose()
     {
-        foreach (var entry in _entries.Values)
-        {
-            entry.Image?.Dispose();
-            entry.Decoder?.Dispose();
-        }
-
-        _entries.Clear();
+        foreach (var decoder in _decoders.Values) decoder?.Dispose();
+        _decoders.Clear();
     }
 }

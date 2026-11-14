@@ -1,0 +1,304 @@
+using System.Runtime.InteropServices;
+using NGL.Audio;
+using NGL.Core;
+using NGL.Rendering;
+using SkiaSharp;
+
+namespace NGL.Playback;
+
+/// <summary>
+/// 시퀀스를 재생·일시정지·탐색한다.
+/// 소리는 오디오 스레드가, 영상 디코딩은 이 엔진의 작업 스레드가 맡고, 화면은 Render로 마지막에 준비된 프레임을 그린다.
+/// 재생 위치는 오디오 장치의 시계(MasterClock)를 따른다.
+/// </summary>
+public sealed class PlaybackEngine : IDisposable
+{
+    /// <summary>화면에 그릴 준비가 끝난 한 프레임 분량의 이미지.</summary>
+    private sealed class PreparedFrame(TimeSpan time, Dictionary<Clip, SKImage> images) : IDisposable
+    {
+        public TimeSpan Time { get; } = time;
+        public Dictionary<Clip, SKImage> Images { get; } = images;
+
+        public void Dispose()
+        {
+            foreach (var image in Images.Values) image.Dispose();
+        }
+    }
+
+    private readonly Sequence _sequence;
+    private readonly IFrameCompositor _compositor = new SkiaCompositor();
+    private readonly VideoFrameSource _video; // 작업 스레드만 쓴다
+    private readonly SequenceAudioReader _audio;
+    private readonly IAudioOutput _output;
+    private readonly MasterClock _clock;
+
+    private readonly object _stateGate = new(); // 시계와 반복 구간
+    private readonly object _frameGate = new(); // _frame
+    private readonly AutoResetEvent _wake = new(false);
+    private readonly Thread _worker;
+
+    private PreparedFrame? _frame;
+    private TimeRange? _loopRange;
+    private volatile bool _invalidated;
+    private volatile bool _disposed;
+
+    /// <summary>새 프레임이 준비됐다. 작업 스레드에서 불린다.</summary>
+    public event Action? FrameReady;
+
+    /// <summary>재생이 끝에 닿아 스스로 멈췄다. 작업 스레드에서 불린다.</summary>
+    public event Action? Ended;
+
+    public PlaybackEngine(Sequence sequence, Func<Guid, string?> pathOfAsset, IAudioOutput output)
+    {
+        _sequence = sequence;
+        _video = new VideoFrameSource(pathOfAsset);
+        _audio = new SequenceAudioReader(sequence, pathOfAsset);
+        _output = output;
+        _clock = new MasterClock(output);
+
+        _worker = new Thread(WorkerLoop) { IsBackground = true, Name = "NGvid 영상 준비" };
+        _worker.Start();
+    }
+
+    public bool IsPlaying
+    {
+        get { lock (_stateGate) return _clock.IsRunning; }
+    }
+
+    /// <summary>현재 위치. 0과 마지막 프레임 사이다.</summary>
+    public TimeSpan Position
+    {
+        get { lock (_stateGate) return Clamp(_clock.Position); }
+    }
+
+    /// <summary>재생이 이 구간의 끝에 닿으면 시작으로 돌아간다. null이면 반복하지 않는다.</summary>
+    public TimeRange? LoopRange
+    {
+        get { lock (_stateGate) return _loopRange; }
+        set { lock (_stateGate) _loopRange = value; }
+    }
+
+    /// <summary>마지막 프레임이 시작하는 시각.</summary>
+    public TimeSpan LastFrameTime =>
+        _sequence.TimeAt(Math.Max(0, _sequence.FrameAt(_sequence.Duration - new TimeSpan(1))));
+
+    public void Play()
+    {
+        lock (_stateGate)
+        {
+            if (_clock.IsRunning) return;
+
+            var from = _clock.Position;
+            if (from >= LastFrameTime) from = _loopRange?.Start ?? TimeSpan.Zero; // 끝에서 누르면 처음부터
+            StartAt(from);
+        }
+
+        _wake.Set();
+    }
+
+    public void Pause()
+    {
+        lock (_stateGate)
+        {
+            if (!_clock.IsRunning) return;
+            _clock.Stop(FrameStart(Clamp(_clock.Position)));
+        }
+
+        _wake.Set();
+    }
+
+    /// <summary>가장 가까운 프레임으로 이동한다. 재생 중이면 그 위치에서 계속 재생한다.</summary>
+    public void Seek(TimeSpan time)
+    {
+        lock (_stateGate)
+        {
+            var target = Clamp(_sequence.SnapToFrame(time < TimeSpan.Zero ? TimeSpan.Zero : time));
+            if (_clock.IsRunning) StartAt(target);
+            else _clock.Stop(target);
+        }
+
+        _wake.Set();
+    }
+
+    /// <summary>멈추고 프레임 단위로 이동한다. 음수면 뒤로 간다.</summary>
+    public void Step(int frames)
+    {
+        lock (_stateGate)
+        {
+            var frame = _sequence.FrameAt(Clamp(_clock.Position)) + frames;
+            _clock.Stop(Clamp(_sequence.TimeAt(Math.Max(0, frame))));
+        }
+
+        _wake.Set();
+    }
+
+    /// <summary>시퀀스 내용이 바뀌었을 때 현재 프레임을 다시 준비하게 한다.</summary>
+    public void Invalidate()
+    {
+        _invalidated = true;
+        _wake.Set();
+    }
+
+    /// <summary>마지막에 준비된 프레임을 시퀀스 좌표의 캔버스에 그린다. 화면 스레드에서 부른다.</summary>
+    public void Render(SKCanvas canvas)
+    {
+        lock (_frameGate)
+        {
+            var frame = _frame;
+            _compositor.Render(canvas, _sequence, frame?.Time ?? TimeSpan.Zero,
+                clip => frame?.Images.GetValueOrDefault(clip));
+        }
+    }
+
+    private void StartAt(TimeSpan position)
+    {
+        _audio.Seek(position);
+        _clock.Start(position, _audio.Read);
+    }
+
+    private TimeSpan Clamp(TimeSpan time)
+    {
+        var last = LastFrameTime;
+        return time < TimeSpan.Zero ? TimeSpan.Zero : time > last ? last : time;
+    }
+
+    /// <summary>주어진 시각에 보이는 프레임이 시작하는 시각.</summary>
+    private TimeSpan FrameStart(TimeSpan time) => _sequence.TimeAt(_sequence.FrameAt(time));
+
+    // 주의: 작업 스레드가 시퀀스의 트랙·클립 목록을 읽는다. 편집 기능(M4)이 생기면
+    // 편집하는 동안 이 스레드가 목록을 읽지 않도록 막아야 한다.
+    private void WorkerLoop()
+    {
+        var preciseTimer = false;
+        try
+        {
+            while (!_disposed)
+            {
+                var ended = false;
+                bool playing;
+                TimeSpan position;
+
+                lock (_stateGate)
+                {
+                    playing = _clock.IsRunning;
+                    position = _clock.Position;
+
+                    if (playing)
+                    {
+                        if (_loopRange is { } loop && loop.Duration > TimeSpan.Zero && position >= loop.End)
+                        {
+                            StartAt(Clamp(loop.Start));
+                            position = _clock.Position;
+                        }
+                        else if (position >= _sequence.Duration)
+                        {
+                            _clock.Stop(LastFrameTime);
+                            position = LastFrameTime;
+                            playing = false;
+                            ended = true;
+                        }
+                    }
+
+                    position = Clamp(position);
+                }
+
+                if (ended) Ended?.Invoke();
+
+                // Windows의 기본 타이머는 약 15ms 단위라서 60fps 프레임 간격(16.7ms)을 맞출 수 없다.
+                // 재생하는 동안만 1ms 단위로 올린다.
+                if (playing != preciseTimer)
+                {
+                    preciseTimer = playing;
+                    SetPreciseTimer(playing);
+                }
+
+                var time = FrameStart(position);
+                if (_frame is null || _frame.Time != time || _invalidated)
+                {
+                    _invalidated = false;
+                    Prepare(time);
+                    FrameReady?.Invoke();
+                }
+
+                if (!playing)
+                {
+                    _wake.WaitOne();
+                    continue;
+                }
+
+                // 다음 프레임 경계까지 기다린다. 그 사이 탐색·일시정지가 오면 바로 깬다.
+                var untilNext = _sequence.TimeAt(_sequence.FrameAt(time) + 1) - Position;
+                _wake.WaitOne(Math.Clamp((int)Math.Ceiling(untilNext.TotalMilliseconds), 1, 10));
+            }
+        }
+        finally
+        {
+            if (preciseTimer) SetPreciseTimer(false);
+        }
+    }
+
+    /// <summary>주어진 시각의 영상 프레임들을 디코딩해 _frame으로 바꿔 끼운다.</summary>
+    private void Prepare(TimeSpan time)
+    {
+        var images = new Dictionary<Clip, SKImage>();
+        foreach (var track in _sequence.Tracks)
+        {
+            if (track is not VideoTrack) continue;
+
+            foreach (var clip in track.Clips)
+            {
+                if (clip is not VideoClip video || !clip.Range.Contains(time)) continue;
+
+                try
+                {
+                    if (_video.GetImage(video, time) is { } image) images.Add(clip, image);
+                }
+                catch (InvalidDataException)
+                {
+                    // 깨진 구간은 비워 둔다.
+                }
+            }
+        }
+
+        PreparedFrame? old;
+        lock (_frameGate)
+        {
+            old = _frame;
+            _frame = new PreparedFrame(time, images);
+        }
+
+        old?.Dispose();
+    }
+
+    private static void SetPreciseTimer(bool enabled)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        if (enabled) timeBeginPeriod(1);
+        else timeEndPeriod(1);
+    }
+
+    [DllImport("winmm.dll")]
+    private static extern uint timeBeginPeriod(uint milliseconds);
+
+    [DllImport("winmm.dll")]
+    private static extern uint timeEndPeriod(uint milliseconds);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _wake.Set();
+        _worker.Join();
+
+        lock (_stateGate) _clock.Stop(TimeSpan.Zero);
+        _audio.Dispose();
+        _video.Dispose();
+        lock (_frameGate)
+        {
+            _frame?.Dispose();
+            _frame = null;
+        }
+
+        _wake.Dispose();
+    }
+}
