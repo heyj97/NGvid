@@ -106,7 +106,8 @@ public sealed class TimelineView : FrameworkElement
 
     protected override Size MeasureOverride(Size availableSize) => new(
         double.IsInfinity(availableSize.Width) ? 0 : availableSize.Width,
-        RulerHeight + Math.Max(1, Model?.Project?.Sequence.Tracks.Count ?? 0) * TrackHeight);
+        // 트랙이 적어도 보이는 영역(트랙 4개)만큼은 차지한다. 트랙 아래의 빈 곳도 눌러서 선택을 풀 수 있게.
+        RulerHeight + Math.Max(4, Model?.Project?.Sequence.Tracks.Count ?? 0) * TrackHeight);
 
     // ───── 그리기 ─────
 
@@ -432,7 +433,13 @@ public sealed class TimelineView : FrameworkElement
         _drag = DragMode.None;
         _dragClip = null;
         _dragStarted = false;
-        if (Model is not { } model || clip is null || !started) return;
+        if (Model is not { } model || clip is null) return;
+        if (!started)
+        {
+            // 끌지 않고 눌렀다 뗐으면 그 클립만 선택한다. (누르는 순간에 풀면 여러 클립을 함께 끌 수 없다.)
+            model.Select(clip);
+            return;
+        }
 
         switch (drag)
         {
