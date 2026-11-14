@@ -80,9 +80,12 @@ public partial class MainViewModel
     [RelayCommand]
     private void ToggleKeyframe(string kind)
     {
-        AnimatedProperty[] properties = kind == "Position"
-            ? [AnimatedProperty.X, AnimatedProperty.Y]
-            : [Enum.Parse<AnimatedProperty>(kind)];
+        AnimatedProperty[] properties = kind switch
+        {
+            "Position" => [AnimatedProperty.X, AnimatedProperty.Y],
+            "Mask" => [AnimatedProperty.MaskX, AnimatedProperty.MaskY, AnimatedProperty.MaskWidth, AnimatedProperty.MaskHeight],
+            _ => [Enum.Parse<AnimatedProperty>(kind)],
+        };
         var clips = SelectedClips().Where(clip => SequenceEdits.CanAnimate(clip, properties[0])).ToList();
         if (clips.Count == 0) return;
 
@@ -111,6 +114,10 @@ public partial class MainViewModel
         (TextualClip text, AnimatedProperty.X) => text.Style.X,
         (TextualClip text, AnimatedProperty.Y) => text.Style.Y,
         (TextualClip, AnimatedProperty.Scale or AnimatedProperty.Opacity) => 1, // 글자의 크기·불투명도는 100%가 기본
+        (VisualClip visual, AnimatedProperty.MaskX) => visual.Mask.X,
+        (VisualClip visual, AnimatedProperty.MaskY) => visual.Mask.Y,
+        (VisualClip visual, AnimatedProperty.MaskWidth) => visual.Mask.Width,
+        (VisualClip visual, AnimatedProperty.MaskHeight) => visual.Mask.Height,
         _ => 0,
     };
 

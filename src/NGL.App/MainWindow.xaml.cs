@@ -339,13 +339,39 @@ public partial class MainWindow : Window
         _previewDragClips = _viewModel.SelectedVisualPositions();
         if (_previewDragClips.Count == 0) return;
 
-        _previewDragStart = ToSequence(e);
+        var point = ToSequence(e);
+        if (_viewModel.IsEditingMask && _viewModel.ToMaskSpace(point.X, point.Y) is { } inClip)
+        {
+            // 마스크 편집: 자유 도형은 누른 곳에 점을 찍고, 사각형·원은 누른 곳으로 가운데를 옮긴 뒤 끌어서 따라오게 한다.
+            if (_viewModel.IsPolygonMask)
+            {
+                _viewModel.AddMaskPoint(inClip.X, inClip.Y);
+                return;
+            }
+
+            _draggingMask = true;
+            _viewModel.BeginLiveEdit();
+            _viewModel.MoveMask(inClip.X, inClip.Y);
+            Preview.CaptureMouse();
+            return;
+        }
+
+        _previewDragStart = point;
         _viewModel.BeginLiveEdit();
         Preview.CaptureMouse();
     }
 
+    private bool _draggingMask;
+
     private void OnPreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (_draggingMask)
+        {
+            var point = ToSequence(e);
+            if (_viewModel.ToMaskSpace(point.X, point.Y) is { } inClip) _viewModel.MoveMask(inClip.X, inClip.Y);
+            return;
+        }
+
         if (_previewDragStart is not { } start) return;
 
         var now = ToSequence(e);
@@ -362,6 +388,14 @@ public partial class MainWindow : Window
 
     private void OnPreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
+        if (_draggingMask)
+        {
+            _draggingMask = false;
+            Preview.ReleaseMouseCapture();
+            _viewModel.CommitLiveEdit("마스크 이동");
+            return;
+        }
+
         if (_previewDragStart is null) return;
         _previewDragStart = null;
         Preview.ReleaseMouseCapture();
@@ -371,7 +405,9 @@ public partial class MainWindow : Window
     /// <summary>휠 한 칸에 5%씩 크기를 바꾼다.</summary>
     private void OnPreviewWheel(object sender, MouseWheelEventArgs e)
     {
-        _viewModel.ScaleSelection(Math.Pow(1.05, e.Delta / 120.0));
+        var factor = Math.Pow(1.05, e.Delta / 120.0);
+        if (_viewModel.IsEditingMask) _viewModel.ScaleMask(factor);
+        else _viewModel.ScaleSelection(factor);
         e.Handled = true;
     }
 }

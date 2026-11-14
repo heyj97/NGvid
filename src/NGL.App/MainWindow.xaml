@@ -366,6 +366,54 @@
                             </TextBlock>
                         </DockPanel>
                         <Button x:Name="ResetEffectsButton" Content="효과·색보정 초기화" Command="{Binding ResetEffectsCommand}" Margin="0" />
+
+                        <!-- 크로마키 -->
+                        <TextBlock Text="크로마키" FontWeight="Medium" Margin="0,16,0,12" />
+                        <DockPanel>
+                            <TextBox x:Name="KeyColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding KeyColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="지울 색" Style="{StaticResource Label}" ToolTip="이 색을 투명하게 만듭니다. 그린스크린은 #00FF00, 블루스크린은 #0000FF. 비우면 끕니다." />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="KeyToleranceBox" DockPanel.Dock="Right" Text="{Binding KeyTolerancePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="허용 범위 (%)" Style="{StaticResource Label}" ToolTip="클수록 비슷한 색까지 지웁니다" />
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBox x:Name="KeySoftnessBox" DockPanel.Dock="Right" Text="{Binding KeySoftnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                            <TextBlock Text="가장자리 부드럽게 (%)" Style="{StaticResource Label}" />
+                        </DockPanel>
+
+                        <!-- 마스크 -->
+                        <TextBlock Text="마스크" FontWeight="Medium" Margin="0,8,0,12" />
+                        <DockPanel>
+                            <ComboBox x:Name="MaskShapeBox" DockPanel.Dock="Right" Width="110" ItemsSource="{x:Static local:MainViewModel.MaskShapeNames}"
+                                      SelectedIndex="{Binding MaskShapeIndex}" Focusable="False" />
+                            <TextBlock Text="도형" Style="{StaticResource Label}" ToolTip="도형 안쪽만 보이게 합니다" />
+                        </DockPanel>
+                        <StackPanel x:Name="MaskSettings" Visibility="{Binding HasMask, Converter={StaticResource Visible}}">
+                            <DockPanel>
+                                <Button x:Name="MaskKeyButton" DockPanel.Dock="Right" Content="{Binding MaskKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Mask"
+                                        Padding="5,2" Margin="4,0,0,0" ToolTip="재생 위치에 마스크 위치·크기의 키프레임 찍기·지우기" />
+                                <TextBox x:Name="MaskYBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskYPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="위에서부터 (%)" />
+                                <TextBox x:Name="MaskXBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskXPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="왼쪽에서부터 (%)" />
+                                <TextBlock Text="가운데 (%)" Style="{StaticResource Label}" ToolTip="클립 그림 안에서의 위치. 50, 50이 한가운데" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBox x:Name="MaskHeightBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskHeightPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="높이 (%)" />
+                                <TextBox x:Name="MaskWidthBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskWidthPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="너비 (%)" />
+                                <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="사각형·원의 너비와 높이. 자유 도형에는 쓰이지 않습니다." />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBox x:Name="MaskFeatherBox" DockPanel.Dock="Right" Text="{Binding MaskFeather, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
+                                <TextBlock Text="가장자리 흐림" Style="{StaticResource Label}" />
+                            </DockPanel>
+                            <CheckBox x:Name="MaskInvertedBox" Content="반전 (도형 안쪽을 가림)" IsChecked="{Binding MaskInverted}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,0,8" />
+                            <CheckBox x:Name="MaskEditingBox" Content="미리보기에서 마스크 편집" IsChecked="{Binding MaskEditing}" Foreground="#E6E7EA" Focusable="False" Margin="0,0,0,8"
+                                      ToolTip="켜면 미리보기에서 끌어서 마스크를 옮기고 휠로 크기를 바꿉니다. 자유 도형은 누른 곳에 점이 찍힙니다." />
+                            <DockPanel Visibility="{Binding IsPolygonMask, Converter={StaticResource Visible}}">
+                                <Button x:Name="ClearMaskPointsButton" DockPanel.Dock="Right" Content="점 모두 지우기" Command="{Binding ClearMaskPointsCommand}" Margin="0" Padding="8,4" />
+                                <TextBlock x:Name="MaskPointLabel" Text="{Binding MaskPointText}" Style="{StaticResource Label}" ToolTip="점이 세 개 이상이면 마스크가 적용됩니다" />
+                            </DockPanel>
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- 텍스트·자막 -->
