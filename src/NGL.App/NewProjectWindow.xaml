@@ -1,0 +1,43 @@
+<Window x:Class="NGL.App.NewProjectWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="새 프로젝트" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="#17181C" Foreground="#E6E7EA" FontSize="14">
+    <StackPanel Margin="24">
+        <TextBlock Text="프로젝트 이름" Margin="0,0,0,6" Foreground="#A7ACB4" />
+        <TextBox x:Name="NameBox" Padding="8,6" Background="#1F2126" Foreground="#E6E7EA" BorderBrush="#33363D" CaretBrush="#E6E7EA" />
+
+        <TextBlock Text="저장 위치" Margin="0,16,0,6" Foreground="#A7ACB4" />
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="찾아보기" Click="OnBrowseClick" Padding="12,6" Margin="8,0,0,0"
+                    Background="#26292F" Foreground="#E6E7EA" BorderThickness="0" />
+            <TextBox x:Name="LocationBox" Padding="8,6" Background="#1F2126" Foreground="#E6E7EA" BorderBrush="#33363D" CaretBrush="#E6E7EA" />
+        </DockPanel>
+
+        <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="비율" Margin="0,0,0,6" Foreground="#A7ACB4" />
+                <ComboBox x:Name="PresetBox" Padding="8,6" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="프레임레이트" Margin="0,0,0,6" Foreground="#A7ACB4" />
+                <ComboBox x:Name="FrameRateBox" Padding="8,6" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock x:Name="ErrorText" Margin="0,16,0,0" Foreground="#FF7A7A" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="취소" IsCancel="True" Padding="16,8" Margin="0,0,8,0"
+                    Background="#26292F" Foreground="#E6E7EA" BorderThickness="0" />
+            <Button x:Name="CreateButton" Content="만들기" IsDefault="True" Click="OnCreateClick" Padding="16,8"
+                    Background="#4C8DFF" Foreground="#0B0C0E" BorderThickness="0" FontWeight="Bold" />
+        </StackPanel>
+    </StackPanel>
+</Window>

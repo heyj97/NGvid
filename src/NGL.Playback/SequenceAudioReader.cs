@@ -7,7 +7,7 @@ namespace NGL.Playback;
 /// 시퀀스의 오디오 트랙에 놓인 클립들의 소리를 타임라인 위치에 맞춰 섞어 준다.
 /// Seek과 Read는 서로 다른 스레드에서 불러도 된다.
 /// </summary>
-public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> pathOfAsset) : IDisposable
+public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> pathOfAsset, object? sequenceGate = null) : IDisposable
 {
     private const int Rate = IAudioDecoder.SampleRate;
     private const int Channels = IAudioDecoder.Channels;
@@ -19,6 +19,7 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
     }
 
     private readonly object _gate = new();
+    private readonly object _sequenceGate = sequenceGate ?? new object(); // 편집과 동시에 트랙 목록을 읽지 않기 위한 잠금
     private readonly Dictionary<Guid, Entry> _entries = []; // 클립 ID별
     private float[] _scratch = [];
     private long _position; // 다음에 읽을 타임라인 위치 (샘플 프레임)
@@ -37,6 +38,7 @@ public sealed class SequenceAudioReader(Sequence sequence, Func<Guid, string?> p
         var frames = buffer.Length / Channels;
 
         lock (_gate)
+        lock (_sequenceGate)
         {
             var start = _position;
             var end = start + frames;

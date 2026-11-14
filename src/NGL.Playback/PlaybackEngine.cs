@@ -34,6 +34,7 @@ public sealed class PlaybackEngine : IDisposable
 
     private readonly object _stateGate = new(); // 시계와 반복 구간
     private readonly object _frameGate = new(); // _frame
+    private readonly object _sequenceGate = new(); // 시퀀스의 트랙·클립 목록
     private readonly AutoResetEvent _wake = new(false);
     private readonly Thread _worker;
 
@@ -53,7 +54,7 @@ public sealed class PlaybackEngine : IDisposable
     {
         _sequence = sequence;
         _video = new VideoFrameSource(pathOfAsset);
-        _audio = new SequenceAudioReader(sequence, pathOfAsset);
+        _audio = new SequenceAudioReader(sequence, pathOfAsset, _sequenceGate);
         _output = output;
         _clock = new MasterClock(output);
 
@@ -92,7 +93,22 @@ public sealed class PlaybackEngine : IDisposable
 
     /// <summary>마지막 프레임이 시작하는 시각.</summary>
     public TimeSpan LastFrameTime =>
-        _sequence.TimeAt(Math.Max(0, _sequence.FrameAt(_sequence.Duration - new TimeSpan(1))));
+        _sequence.TimeAt(Math.Max(0, _sequence.FrameAt(Duration - new TimeSpan(1))));
+
+    private TimeSpan Duration
+    {
+        get { lock (_sequenceGate) return _sequence.Duration; }
+    }
+
+    /// <summary>
+    /// 시퀀스의 트랙·클립을 바꾼다. 디코딩·오디오 스레드가 목록을 읽는 중이 아닐 때 실행되고, 끝나면 화면을 다시 준비한다.
+    /// change 안에서는 모델만 바꾸고 이 엔진의 다른 기능은 부르지 않는다.
+    /// </summary>
+    public void Edit(Action change)
+    {
+        lock (_sequenceGate) change();
+        Invalidate();
+    }
 
     public void Play()
     {
@@ -177,8 +193,6 @@ public sealed class PlaybackEngine : IDisposable
     /// <summary>주어진 시각에 보이는 프레임이 시작하는 시각.</summary>
     private TimeSpan FrameStart(TimeSpan time) => _sequence.TimeAt(_sequence.FrameAt(time));
 
-    // 주의: 작업 스레드가 시퀀스의 트랙·클립 목록을 읽는다. 편집 기능(M4)이 생기면
-    // 편집하는 동안 이 스레드가 목록을 읽지 않도록 막아야 한다.
     private void WorkerLoop()
     {
         var preciseTimer = false;
@@ -202,7 +216,7 @@ public sealed class PlaybackEngine : IDisposable
                             StartAt(Clamp(loop.Start));
                             position = _clock.Position;
                         }
-                        else if (position >= _sequence.Duration)
+                        else if (position >= Duration)
                         {
                             _clock.Stop(LastFrameTime);
                             position = LastFrameTime;
@@ -254,14 +268,20 @@ public sealed class PlaybackEngine : IDisposable
     {
         _video.Quality = _quality;
         var images = new Dictionary<Clip, SKImage>();
-        foreach (var track in _sequence.Tracks)
+
+        // 목록은 잠근 채로 훑어 두고, 오래 걸리는 디코딩은 잠금 밖에서 한다.
+        List<Clip> visible;
+        lock (_sequenceGate)
         {
-            if (track is not VideoTrack) continue;
+            visible = _sequence.Tracks.OfType<VideoTrack>()
+                .SelectMany(track => track.Clips)
+                .Where(clip => clip.Range.Contains(time))
+                .ToList();
+        }
 
-            foreach (var clip in track.Clips)
+        {
+            foreach (var clip in visible)
             {
-                if (!clip.Range.Contains(time)) continue;
-
                 try
                 {
                     var image = clip switch

@@ -160,6 +160,30 @@ public class PlaybackTests
     }
 
     [Fact]
+    public void 재생_중에_클립을_추가해도_안전하고_길이가_늘어난다()
+    {
+        var sequence = SampleSequence();
+        var output = new ManualOutput();
+        using var engine = Engine(sequence, output);
+        engine.Play();
+
+        // 디코딩·오디오 스레드가 도는 동안 클립을 계속 추가한다.
+        var asset = new MediaAsset { Kind = MediaKind.Video, Duration = Sec(2), HasAudio = true };
+        for (var i = 0; i < 50; i++)
+        {
+            engine.Edit(() => sequence.AddToEnd(asset));
+            output.Callback?.Invoke(new float[960]);
+            output.Elapsed += Sec(0.05);
+        }
+
+        Assert.True(engine.IsPlaying);
+        Assert.Equal(sequence.TimeAt(60 * 51 - 1), engine.LastFrameTime);
+        engine.Pause();
+        engine.Seek(Sec(2) + Sec(1)); // 두 번째 클립의 30번 프레임
+        WaitUntil(() => ShownFrame(engine) == 30);
+    }
+
+    [Fact]
     public void 끝에_닿으면_마지막_프레임에서_멈추고_다시_누르면_처음부터_재생한다()
     {
         var sequence = SampleSequence();
