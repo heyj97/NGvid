@@ -28,6 +28,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _timeText = "00:00:00:00 / 00:00:00:00";
     [ObservableProperty] private string _loopText = "";
     [ObservableProperty] private string _audioWarning = "";
+    [ObservableProperty] private int _qualityIndex; // 0 전체, 1 = 1/2, 2 = 1/4
+
+    private PreviewQuality Quality => (PreviewQuality)(1 << QualityIndex);
+
+    partial void OnQualityIndexChanged(int value)
+    {
+        if (_engine is not null) _engine.Quality = Quality;
+    }
     [ObservableProperty] private bool _isLooping;
 
     [ObservableProperty]
@@ -83,6 +91,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         _engine?.Dispose();
         _engine = new PlaybackEngine(sequence, id => project.FindAsset(id)?.RelativePath, _output);
+        _engine.Quality = Quality;
         _engine.FrameReady += () => RenderRequested?.Invoke();
 
         Project = project;

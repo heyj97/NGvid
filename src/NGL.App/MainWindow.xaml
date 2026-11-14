@@ -35,6 +35,12 @@
             <DockPanel>
                 <Button DockPanel.Dock="Left" Content="영상 열기" Click="OnOpenClick"
                         Padding="16,6" Background="#4C8DFF" Foreground="#0B0C0E" FontWeight="Bold" />
+                <ComboBox x:Name="QualityBox" DockPanel.Dock="Right" SelectedIndex="{Binding QualityIndex}" Focusable="False"
+                          Width="110" Margin="10,0,0,0" VerticalAlignment="Center" ToolTip="미리보기 화질">
+                    <ComboBoxItem Content="화질 전체" />
+                    <ComboBoxItem Content="화질 1/2" />
+                    <ComboBoxItem Content="화질 1/4" />
+                </ComboBox>
                 <TextBlock x:Name="AudioWarningLabel" DockPanel.Dock="Right" Text="{Binding AudioWarning}"
                            Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#FFB454" />
                 <TextBlock Text="{Binding InfoText}" Margin="10,0,0,0" VerticalAlignment="Center"
