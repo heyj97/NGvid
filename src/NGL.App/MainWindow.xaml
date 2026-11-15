@@ -343,45 +343,7 @@
             <!-- 속성 패널: 값은 Enter나 다른 곳 클릭으로 확정한다. -->
             <Border Grid.Column="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0">
                 <Border.Resources>
-                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                        <Setter Property="Padding" Value="8,4" />
-                        <Setter Property="FontFamily" Value="{StaticResource Mono}" />
-                        <Setter Property="FontSize" Value="12" />
-                        <Setter Property="Width" Value="76" />
-                        <Setter Property="HorizontalAlignment" Value="Right" />
-                    </Style>
-                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
-                        <Setter Property="MinWidth" Value="110" />
-                    </Style>
-                    <Style x:Key="Label" TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{StaticResource Muted}" />
-                        <Setter Property="VerticalAlignment" Value="Center" />
-                    </Style>
-                    <Style x:Key="Title" TargetType="TextBlock">
-                        <Setter Property="FontSize" Value="12" />
-                        <Setter Property="FontWeight" Value="Bold" />
-                        <Setter Property="Margin" Value="0,0,0,10" />
-                    </Style>
-                    <Style x:Key="Divider" TargetType="Border">
-                        <Setter Property="Height" Value="1" />
-                        <Setter Property="Background" Value="{StaticResource Line}" />
-                        <Setter Property="Margin" Value="-16,4,-16,12" />
-                    </Style>
-                    <Style TargetType="DockPanel">
-                        <Setter Property="Margin" Value="0,0,0,10" />
-                    </Style>
-                    <!-- 키프레임 버튼: ◆ 여기 있음, ◈ 다른 곳에 있음, ◇ 없음 -->
-                    <Style x:Key="Key" TargetType="Button" BasedOn="{StaticResource MainGhost}">
-                        <Setter Property="Width" Value="28" />
-                        <Setter Property="Height" Value="28" />
-                        <Setter Property="Margin" Value="4,0,-6,0" />
-                        <Setter Property="Foreground" Value="{StaticResource Accent}" />
-                        <Style.Triggers>
-                            <Trigger Property="Content" Value="◇">
-                                <Setter Property="Foreground" Value="#5C6370" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
+                    <ResourceDictionary Source="InspectorStyles.xaml" />
                 </Border.Resources>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                 <StackPanel Margin="16,12">
@@ -452,133 +414,8 @@
                         <Button x:Name="ResetTransformButton" Content="변형 초기화" Command="{Binding ResetTransformCommand}" Margin="0"
                                 ToolTip="위치·크기·회전·자르기·뒤집기를 처음 상태로 되돌립니다" />
 
-                        <!-- 전환, 효과, 색보정 -->
-                        <Border Style="{StaticResource Divider}" />
-                        <TextBlock Text="전환" Style="{StaticResource Title}" />
-                        <DockPanel>
-                            <TextBox x:Name="TransitionSecondsBox" DockPanel.Dock="Right" Width="44" Margin="6,0,0,0" Text="{Binding TransitionSeconds, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="길이 (초)" />
-                            <ComboBox x:Name="TransitionBox" DockPanel.Dock="Right" Width="130" ItemsSource="{x:Static local:MainViewModel.TransitionNames}"
-                                      SelectedIndex="{Binding TransitionIndex}" Focusable="False" />
-                            <TextBlock Text="시작" Style="{StaticResource Label}"
-                                       ToolTip="앞 클립에서 이 클립으로 넘어올 때의 효과. 같은 트랙에서 바로 앞에 붙은 클립과 이어집니다." />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="TransitionSecondsSlider" Text="{Binding TransitionSeconds}" Minimum="0.1" Maximum="3" TickFrequency="0.1" Margin="0,-4,0,10" />
-
-                        <Border Style="{StaticResource Divider}" />
-                        <TextBlock Text="효과" Style="{StaticResource Title}" />
-                        <DockPanel>
-                            <TextBox x:Name="BlurBox" DockPanel.Dock="Right" Text="{Binding BlurAmount, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="흐림 (0~100)" Style="{StaticResource Label}" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="BlurAmountSlider" Text="{Binding BlurAmount}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="SharpenBox" DockPanel.Dock="Right" Text="{Binding SharpenPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="선명하게 (%)" Style="{StaticResource Label}" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="SharpenPercentSlider" Text="{Binding SharpenPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="VignetteBox" DockPanel.Dock="Right" Text="{Binding VignettePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="비네팅 (%)" Style="{StaticResource Label}" ToolTip="가장자리를 어둡게 합니다" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="VignettePercentSlider" Text="{Binding VignettePercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-
-                        <Border Style="{StaticResource Divider}" />
-                        <TextBlock Text="색보정" Style="{StaticResource Title}" ToolTip="-100~100, 0이 원래 그대로" />
-                        <DockPanel>
-                            <TextBox x:Name="ExposureBox" DockPanel.Dock="Right" Text="{Binding ExposureStops, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="노출 (-2~2)" Style="{StaticResource Label}" ToolTip="1마다 밝기가 두 배" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="ExposureStopsSlider" Text="{Binding ExposureStops}" Minimum="-2" Maximum="2" TickFrequency="0.1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="BrightnessBox" DockPanel.Dock="Right" Text="{Binding BrightnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="밝기 (%)" Style="{StaticResource Label}" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="BrightnessPercentSlider" Text="{Binding BrightnessPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="ContrastBox" DockPanel.Dock="Right" Text="{Binding ContrastPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="대비 (%)" Style="{StaticResource Label}" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="ContrastPercentSlider" Text="{Binding ContrastPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="SaturationBox" DockPanel.Dock="Right" Text="{Binding SaturationPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="채도 (%)" Style="{StaticResource Label}" ToolTip="-100이면 흑백" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="SaturationPercentSlider" Text="{Binding SaturationPercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="TemperatureBox" DockPanel.Dock="Right" Text="{Binding TemperaturePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="색온도 (%)" Style="{StaticResource Label}" ToolTip="양수는 따뜻하게, 음수는 차갑게" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="TemperaturePercentSlider" Text="{Binding TemperaturePercent}" Minimum="-100" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <Button x:Name="ClearLutButton" DockPanel.Dock="Right" Content="해제" Command="{Binding ClearLutCommand}" Margin="4,0,0,0" Padding="8,4" IsEnabled="{Binding HasLut}" />
-                            <Button x:Name="ImportLutButton" DockPanel.Dock="Right" Content="불러오기" Click="OnImportLutClick" Margin="4,0,0,0" Padding="8,4" ToolTip=".cube 파일을 골라 색감을 적용합니다" />
-                            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                                <Run Text="LUT  " Foreground="#A7ACB4" /><Run x:Name="LutNameRun" Text="{Binding LutName, Mode=OneWay}" />
-                            </TextBlock>
-                        </DockPanel>
-                        <Button x:Name="ResetEffectsButton" Content="효과·색보정 초기화" Command="{Binding ResetEffectsCommand}" Margin="0" />
-
-                        <!-- 크로마키 -->
-                        <Border Style="{StaticResource Divider}" />
-                        <TextBlock Text="크로마키" Style="{StaticResource Title}" />
-                        <DockPanel>
-                            <Button Style="{StaticResource Swatch}" Background="{Binding KeyColor, FallbackValue=Transparent}" Tag="{Binding ElementName=KeyColorBox}" Click="OnPickColorClick" />
-                            <TextBox x:Name="KeyColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding KeyColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="지울 색" Style="{StaticResource Label}" ToolTip="이 색을 투명하게 만듭니다. 그린스크린은 #00FF00, 블루스크린은 #0000FF. 비우면 끕니다." />
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBox x:Name="KeyToleranceBox" DockPanel.Dock="Right" Text="{Binding KeyTolerancePercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="허용 범위 (%)" Style="{StaticResource Label}" ToolTip="클수록 비슷한 색까지 지웁니다" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="KeyTolerancePercentSlider" Text="{Binding KeyTolerancePercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                        <DockPanel>
-                            <TextBox x:Name="KeySoftnessBox" DockPanel.Dock="Right" Text="{Binding KeySoftnessPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                            <TextBlock Text="가장자리 부드럽게 (%)" Style="{StaticResource Label}" />
-                        </DockPanel>
-                        <local:NumberSlider x:Name="KeySoftnessPercentSlider" Text="{Binding KeySoftnessPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-
-                        <!-- 마스크 -->
-                        <Border Style="{StaticResource Divider}" />
-                        <TextBlock Text="마스크" Style="{StaticResource Title}" />
-                        <DockPanel>
-                            <ComboBox x:Name="MaskShapeBox" DockPanel.Dock="Right" Width="110" ItemsSource="{x:Static local:MainViewModel.MaskShapeNames}"
-                                      SelectedIndex="{Binding MaskShapeIndex}" Focusable="False" />
-                            <TextBlock Text="도형" Style="{StaticResource Label}" ToolTip="도형 안쪽만 보이게 합니다" />
-                        </DockPanel>
-                        <StackPanel x:Name="MaskSettings" Visibility="{Binding HasMask, Converter={StaticResource Visible}}">
-                            <DockPanel>
-                                <Button x:Name="MaskKeyButton" DockPanel.Dock="Right" Content="{Binding MaskKey}" Command="{Binding ToggleKeyframeCommand}" CommandParameter="Mask"
-                                        Style="{StaticResource Key}" ToolTip="재생 위치에 마스크 위치·크기의 키프레임 찍기·지우기" />
-                                <TextBox x:Name="MaskYBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskYPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="위에서부터 (%)" />
-                                <TextBox x:Name="MaskXBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskXPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="왼쪽에서부터 (%)" />
-                                <TextBlock Text="가운데 (%)" Style="{StaticResource Label}" ToolTip="클립 그림 안에서의 위치. 50, 50이 한가운데" />
-                            </DockPanel>
-                            <UniformGrid Columns="2" Margin="0,-4,0,10">
-                                <local:NumberSlider x:Name="MaskXPercentSlider" Text="{Binding MaskXPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,0,6,0" />
-                                <local:NumberSlider x:Name="MaskYPercentSlider" Text="{Binding MaskYPercent}" Minimum="0" Maximum="100" TickFrequency="1" Margin="6,0,0,0" />
-                            </UniformGrid>
-                            <DockPanel>
-                                <TextBox x:Name="MaskHeightBox" DockPanel.Dock="Right" Width="48" Margin="6,0,0,0" Text="{Binding MaskHeightPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="높이 (%)" />
-                                <TextBox x:Name="MaskWidthBox" DockPanel.Dock="Right" Width="48" Text="{Binding MaskWidthPercent, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" ToolTip="너비 (%)" />
-                                <TextBlock Text="크기 (%)" Style="{StaticResource Label}" ToolTip="사각형·원의 너비와 높이. 자유 도형에는 쓰이지 않습니다." />
-                            </DockPanel>
-                            <UniformGrid Columns="2" Margin="0,-4,0,10">
-                                <local:NumberSlider x:Name="MaskWidthPercentSlider" Text="{Binding MaskWidthPercent}" Minimum="1" Maximum="200" TickFrequency="1" Margin="0,0,6,0" />
-                                <local:NumberSlider x:Name="MaskHeightPercentSlider" Text="{Binding MaskHeightPercent}" Minimum="1" Maximum="200" TickFrequency="1" Margin="6,0,0,0" />
-                            </UniformGrid>
-                            <DockPanel>
-                                <TextBox x:Name="MaskFeatherBox" DockPanel.Dock="Right" Text="{Binding MaskFeather, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
-                                <TextBlock Text="가장자리 흐림" Style="{StaticResource Label}" />
-                            </DockPanel>
-                            <local:NumberSlider x:Name="MaskFeatherSlider" Text="{Binding MaskFeather}" Minimum="0" Maximum="100" TickFrequency="1" Margin="0,-4,0,10" />
-                            <CheckBox x:Name="MaskInvertedBox" Content="반전 (도형 안쪽을 가림)" IsChecked="{Binding MaskInverted}" Focusable="False" Margin="0,0,0,8" />
-                            <CheckBox x:Name="MaskEditingBox" Content="미리보기에서 마스크 편집" IsChecked="{Binding MaskEditing}" Focusable="False" Margin="0,0,0,8"
-                                      ToolTip="켜면 미리보기에서 끌어서 마스크를 옮기고 휠로 크기를 바꿉니다. 자유 도형은 누른 곳에 점이 찍힙니다." />
-                            <DockPanel Visibility="{Binding IsPolygonMask, Converter={StaticResource Visible}}">
-                                <Button x:Name="ClearMaskPointsButton" DockPanel.Dock="Right" Content="점 모두 지우기" Command="{Binding ClearMaskPointsCommand}" Margin="0" Padding="8,4" />
-                                <TextBlock x:Name="MaskPointLabel" Text="{Binding MaskPointText}" Style="{StaticResource Label}" ToolTip="점이 세 개 이상이면 마스크가 적용됩니다" />
-                            </DockPanel>
-                        </StackPanel>
+                        <Button x:Name="ClipStudioButton" Content="영상 클립 스튜디오…" Click="OnClipStudioClick" Margin="0,6,0,0"
+                                ToolTip="전환·애니메이션, 효과·색보정, 크로마키·마스크를 고칩니다" />
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
@@ -616,7 +453,6 @@
                                 ToolTip="프리셋의 글자 모양과 움직임을 만들고 고칩니다" />
                         <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 텍스트에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
                                 ToolTip="문구와 시간은 그대로 두고 스타일만 복사합니다" />
-                        <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
                     <!-- 속도 -->
@@ -680,7 +516,7 @@
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
-                    <!-- 키프레임과 애니메이션 프리셋. 텍스트의 움직임은 텍스트 스튜디오의 프리셋으로 정하므로 텍스트를 골랐을 때는 숨긴다. -->
+                    <!-- 키프레임과 애니메이션 프리셋: 오디오 클립만 골랐을 때 보인다. 영상의 것은 영상 클립 스튜디오에, 텍스트의 움직임은 텍스트 스튜디오에 있다. -->
                     <StackPanel x:Name="AnimationInspector">
                         <StackPanel.Style>
                             <Style TargetType="StackPanel">
@@ -689,6 +525,9 @@
                                         <Setter Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HasTextSelection}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasVisualSelection}" Value="True">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
                                 </Style.Triggers>

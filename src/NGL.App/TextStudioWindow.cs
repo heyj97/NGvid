@@ -322,7 +322,7 @@ public sealed class TextStudioWindow : Window
         }
 
         _owner.SaveTextPreset(_selected, new TextStylePreset(name, ReadStyle(), _effects.Select(effect => effect with { }).ToList()));
-        Reload(name);
+        Close();
     }
 
     // ───── 효과 ─────

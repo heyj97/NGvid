@@ -1,4 +1,4 @@
-﻿# 앱 로고(파란 둥근 사각형 + 재생 삼각형)를 여러 크기로 그려 .ico 하나로 묶는다.
+﻿# 앱 로고(포인트 컬러의 둥근 사각형 + 재생 삼각형)를 여러 크기로 그려 .ico 하나로 묶는다.
 param([string]$Out, [string]$Preview)
 Add-Type -AssemblyName System.Drawing
 
@@ -12,9 +12,9 @@ function Draw([int]$size) {
     $path = New-Object Drawing.Drawing2D.GraphicsPath
     $path.AddArc(0, 0, $d, $d, 180, 90); $path.AddArc($e, 0, $d, $d, 270, 90)
     $path.AddArc($e, $e, $d, $d, 0, 90); $path.AddArc(0, $e, $d, $d, 90, 90); $path.CloseFigure()
-    $blue = New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(0x4C, 0x8D, 0xFF))
+    $accent = New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(0xD6, 0xF6, 0x76))
     $dark = New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(0x10, 0x11, 0x14))
-    $g.FillPath($blue, $path)
+    $g.FillPath($accent, $path)
     $points = [Drawing.PointF[]]@(
         (New-Object Drawing.PointF (9.2 * $s), (7.2 * $s)),
         (New-Object Drawing.PointF (17.2 * $s), (12 * $s)),

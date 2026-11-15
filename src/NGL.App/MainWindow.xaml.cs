@@ -122,17 +122,14 @@ public partial class MainWindow : Window
         _viewModel.DeleteTrack(item.Track);
     }
 
-    private void OnImportLutClick(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog { Title = "LUT 불러오기", Filter = "LUT 파일|*.cube|모든 파일|*.*" };
-        if (dialog.ShowDialog(this) == true) _viewModel.ImportLut(dialog.FileName);
-    }
-
     /// <summary>텍스트 목록 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
     private void OnCaptionListClick(object sender, RoutedEventArgs e) => new CaptionListWindow(_viewModel) { Owner = this }.Show();
 
     /// <summary>텍스트 스튜디오 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
     private void OnTextStudioClick(object sender, RoutedEventArgs e) => new TextStudioWindow(_viewModel) { Owner = this }.Show();
+
+    /// <summary>영상 클립 스튜디오 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
+    private void OnClipStudioClick(object sender, RoutedEventArgs e) => new ClipStudioWindow(_viewModel) { Owner = this }.Show();
 
     private void OnSavePresetClick(object sender, RoutedEventArgs e)
     {
@@ -160,14 +157,6 @@ public partial class MainWindow : Window
     private void OnTextContentFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.BeginLiveEdit();
 
     private void OnTextContentBlur(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.CommitLiveEdit();
-
-    /// <summary>색 칸 옆의 네모를 누르면 색을 고르게 하고, 고른 색을 그 칸에 적어 적용한다.</summary>
-    private void OnPickColorClick(object sender, RoutedEventArgs e)
-    {
-        if (((FrameworkElement)sender).Tag is not TextBox box || ColorPicker.Pick(this, box.Text) is not { } color) return;
-        box.Text = color;
-        box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-    }
 
     private void OnNewFromLinkClick(object sender, RoutedEventArgs e) =>
         new NewProjectWindow(_viewModel.CreateProject, path => _viewModel.Import([path])) { Owner = this }.ShowDialog();
