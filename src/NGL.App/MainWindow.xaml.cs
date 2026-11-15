@@ -128,13 +128,11 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) _viewModel.ImportLut(dialog.FileName);
     }
 
-    private void OnSaveStylePresetClick(object sender, RoutedEventArgs e)
-    {
-        if (PromptWindow.Ask(this, "스타일 프리셋 이름", "내 스타일") is { } name) _viewModel.SaveStylePreset(name);
-    }
-
     /// <summary>텍스트 목록 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
     private void OnCaptionListClick(object sender, RoutedEventArgs e) => new CaptionListWindow(_viewModel) { Owner = this }.Show();
+
+    /// <summary>텍스트 스튜디오 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
+    private void OnTextStudioClick(object sender, RoutedEventArgs e) => new TextStudioWindow(_viewModel) { Owner = this }.Show();
 
     private void OnSavePresetClick(object sender, RoutedEventArgs e)
     {
@@ -162,6 +160,14 @@ public partial class MainWindow : Window
     private void OnTextContentFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.BeginLiveEdit();
 
     private void OnTextContentBlur(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.CommitLiveEdit();
+
+    /// <summary>색 칸 옆의 네모를 누르면 색을 고르게 하고, 고른 색을 그 칸에 적어 적용한다.</summary>
+    private void OnPickColorClick(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).Tag is not TextBox box || ColorPicker.Pick(this, box.Text) is not { } color) return;
+        box.Text = color;
+        box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+    }
 
     private void OnNewFromLinkClick(object sender, RoutedEventArgs e) =>
         new NewProjectWindow(_viewModel.CreateProject, path => _viewModel.Import([path])) { Owner = this }.ShowDialog();
@@ -350,10 +356,10 @@ public partial class MainWindow : Window
         canvas.Restore();
     }
 
-    /// <summary>선택한 클립에 파란 테두리와 귀퉁이 점을 그린다. pixel은 화면의 한 픽셀이 시퀀스에서 차지하는 길이.</summary>
+    /// <summary>선택한 클립에 포인트 색 테두리와 귀퉁이 점을 그린다. pixel은 화면의 한 픽셀이 시퀀스에서 차지하는 길이.</summary>
     private void DrawSelection(SKCanvas canvas, float pixel)
     {
-        using var line = new SKPaint { Color = new SKColor(0x4C, 0x8D, 0xFF), Style = SKPaintStyle.Stroke, StrokeWidth = 2 * pixel, IsAntialias = true };
+        using var line = new SKPaint { Color = new SKColor(0xD6, 0xF6, 0x76), Style = SKPaintStyle.Stroke, StrokeWidth = 2 * pixel, IsAntialias = true };
         using var fill = new SKPaint { Color = SKColors.White, IsAntialias = true };
         foreach (var corners in _viewModel.SelectionOutlines())
         {

@@ -14,8 +14,7 @@ public partial class MainViewModel
     private static readonly string[] TextProperties =
     [
         nameof(HasTextSelection), nameof(TextTitle), nameof(TextContent), nameof(FontName),
-        nameof(TextSize), nameof(TextBold), nameof(TextColor), nameof(OutlineColor), nameof(OutlineWidth), nameof(ShadowColor),
-        nameof(ShadowOffset), nameof(BoxColor), nameof(TextX), nameof(TextY), nameof(HighlightColor),
+        nameof(TextSize), nameof(TextPreset), nameof(TextX), nameof(TextY),
     ];
 
     private static readonly string StylePresetPath = PresetFile.PathOf("text-style-presets.json");
@@ -26,8 +25,6 @@ public partial class MainViewModel
         Fonts.SystemFontFamilies.Select(family => family.Source).Order(StringComparer.CurrentCulture).ToList();
 
     public ObservableCollection<string> StylePresetNames { get; } = [];
-
-    public int StylePresetIndex { get; set; }
 
     /// <summary>선택한 텍스트 클립들. 패널에는 첫 클립의 값이 보이고, 고치면 모두에 적용된다.</summary>
     private List<TextualClip> SelectedTextClips() => SelectedClips().OfType<TextualClip>().ToList();
@@ -79,49 +76,17 @@ public partial class MainViewModel
         set => SetNumber(value, 8, 1000, number => EditStyle("글자 크기 변경", style => style.Size = number));
     }
 
-    public bool TextBold
+    /// <summary>클립에 입힌 프리셋의 이름. 고르면 그 프리셋의 모양과 움직임을 입힌다.</summary>
+    public string TextPreset
     {
-        get => FirstText?.Style.Bold ?? false;
-        set => EditStyle("굵기 변경", style => style.Bold = value);
-    }
-
-    public string TextColor
-    {
-        get => FirstText?.Style.Color ?? "";
-        set => SetColor(value, required: true, color => EditStyle("글자 색 변경", style => style.Color = color!));
-    }
-
-    public string OutlineColor
-    {
-        get => FirstText?.Style.OutlineColor ?? "";
-        set => SetColor(value, required: true, color => EditStyle("외곽선 색 변경", style => style.OutlineColor = color!));
-    }
-
-    /// <summary>외곽선 두께(픽셀). 0이면 없음.</summary>
-    public string OutlineWidth
-    {
-        get => Number(FirstText?.Style.OutlineWidth);
-        set => SetNumber(value, 0, 100, number => EditStyle("외곽선 두께 변경", style => style.OutlineWidth = number));
-    }
-
-    public string ShadowColor
-    {
-        get => FirstText?.Style.ShadowColor ?? "";
-        set => SetColor(value, required: true, color => EditStyle("그림자 색 변경", style => style.ShadowColor = color!));
-    }
-
-    /// <summary>그림자 거리(픽셀). 0이면 없음.</summary>
-    public string ShadowOffset
-    {
-        get => Number(FirstText?.Style.ShadowOffset);
-        set => SetNumber(value, 0, 200, number => EditStyle("그림자 변경", style => style.ShadowOffset = number));
-    }
-
-    /// <summary>배경 박스 색. 비우면 없음.</summary>
-    public string BoxColor
-    {
-        get => FirstText?.Style.BoxColor ?? "";
-        set => SetColor(value, required: false, color => EditStyle("배경 박스 변경", style => style.BoxColor = color));
+        get => FirstText?.Style.Preset ?? "";
+        set
+        {
+            // 목록을 다시 채우는 동안 콤보박스가 빈 값을 보내므로, 실제로 다른 프리셋을 골랐을 때만 입힌다.
+            if (value == TextPreset || _stylePresets.Find(preset => preset.Name == value) is not { } chosen) return;
+            var clips = SelectedTextClips();
+            Edit($"프리셋 적용: {chosen.Name}", () => SequenceEdits.ApplyTextPreset(Project!.Sequence, clips, chosen));
+        }
     }
 
     public string TextX
@@ -134,13 +99,6 @@ public partial class MainViewModel
     {
         get => Number(Shown(FirstText, AnimatedProperty.Y, FirstText?.Style.Y));
         set => SetNumber(value, -10000, 10000, number => SetAnimated("위치 변경", AnimatedProperty.Y, number, (TextualClip clip, double y) => clip.Style.Y = y));
-    }
-
-    /// <summary>말하는 단어를 강조하는 색. 비우면 강조하지 않는다.</summary>
-    public string HighlightColor
-    {
-        get => FirstText?.Style.HighlightColor ?? "";
-        set => SetColor(value, required: false, color => EditStyle("단어 강조 변경", style => style.HighlightColor = color));
     }
 
     private void EditText(string name, Action<TextualClip> change)
@@ -177,38 +135,35 @@ public partial class MainViewModel
     {
         StylePresetNames.Clear();
         foreach (var preset in _stylePresets) StylePresetNames.Add(preset.Name);
+        OnPropertyChanged(nameof(TextPreset)); // 다시 채운 목록에서 지금 프리셋을 다시 고르게 한다
     }
 
-    /// <summary>고른 프리셋의 모양을 입힌다. 위치는 지금 것을 그대로 둔다.</summary>
-    [RelayCommand]
-    private void ApplyStylePreset()
-    {
-        if (StylePresetIndex < 0 || StylePresetIndex >= _stylePresets.Count) return;
-        var preset = _stylePresets[StylePresetIndex];
-        EditText($"스타일 적용: {preset.Name}", clip =>
-        {
-            var style = preset.Style.Clone();
-            (style.X, style.Y) = (clip.Style.X, clip.Style.Y);
-            clip.Style = style;
-        });
-    }
+    /// <summary>텍스트 스튜디오에서 고칠 프리셋들.</summary>
+    public IReadOnlyList<TextStylePreset> TextPresets => _stylePresets;
 
-    /// <summary>선택한 클립(첫 번째)의 스타일을 프리셋으로 저장한다. 같은 이름이 있으면 바꾼다.</summary>
-    public void SaveStylePreset(string name)
-    {
-        name = name.Trim();
-        if (name.Length == 0 || FirstText is not { } source) return;
 
-        _stylePresets.RemoveAll(preset => preset.Name == name);
-        _stylePresets.Add(new TextStylePreset(name, source.Style.Clone()));
+
+    /// <summary>
+    /// 프리셋을 저장한다. oldName이 있으면 그 프리셋을 바꾸고(이름이 달라져도 된다), 없으면 새로 더한다.
+    /// 열려 있는 프로젝트에서 그 프리셋을 쓰는 텍스트는 새 모양으로 함께 바뀐다.
+    /// </summary>
+    public void SaveTextPreset(string? oldName, TextStylePreset preset)
+    {
+        _stylePresets.RemoveAll(each => each.Name == preset.Name && each.Name != oldName); // 같은 이름은 하나만 둔다
+        var index = _stylePresets.FindIndex(each => each.Name == oldName);
+        if (index >= 0) _stylePresets[index] = preset;
+        else _stylePresets.Add(preset);
         StoreStylePresets();
+
+        if (oldName is null || Project is not { } project) return;
+        var users = AllClips.OfType<TextualClip>().Where(clip => clip.Style.Preset == oldName).ToList();
+        if (users.Count > 0) Edit($"프리셋 변경: {preset.Name}", () => SequenceEdits.ApplyTextPreset(project.Sequence, users, preset));
     }
 
-    [RelayCommand]
-    private void DeleteStylePreset()
+    /// <summary>프리셋을 지운다. 그 프리셋을 입혀 둔 텍스트의 모양은 그대로 남는다.</summary>
+    public void DeleteTextPreset(string name)
     {
-        if (StylePresetIndex < 0 || StylePresetIndex >= _stylePresets.Count) return;
-        _stylePresets.RemoveAt(StylePresetIndex);
+        _stylePresets.RemoveAll(preset => preset.Name == name);
         StoreStylePresets();
     }
 

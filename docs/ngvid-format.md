@@ -57,7 +57,7 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | --- | --- | --- |
 | `VideoClip` | `VideoTrack` | `assetId`, `sourceStart`(원본에서 재생을 시작하는 위치), 변형 속성 |
 | `ImageClip` | `VideoTrack` | `assetId` (`sourceStart`는 쓰지 않음), 변형 속성 |
-| `TextClip` | `VideoTrack` | `text`, `style` |
+| `TextClip` | `VideoTrack` | `text`, `style`, `effects`(효과 목록: `kind`는 `FadeIn`·`FadeOut`·`Move`·`Scale`·`Popup`, `start`·`duration`은 초, 나머지는 종류별 값) |
 | `AudioClip` | `AudioTrack` | `assetId`, `sourceStart`, `volume`(0~2), `fadeIn`, `fadeOut` |
 
 변형 속성(영상·이미지 클립): `x`, `y`(화면 가운데에서 옮긴 픽셀), `scale`(0.1~4), `rotation`(시계 방향, 도), `opacity`(0~1),

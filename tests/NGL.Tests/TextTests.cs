@@ -151,37 +151,6 @@ public class TextTests
     }
 
     [Fact]
-    public void 단어_강조는_글자_수_비율로_시간을_나눠_차례로_옮겨간다()
-    {
-        // 글자 수 2 + 4 + 2 = 8 → 4초 동안 "가나" 0~1초, "다라마바" 1~3초, "사아" 3~4초
-        var clip = new TextClip { Text = "가나 다라마바\n사아", Range = Range(10, 4), Style = { HighlightColor = "#FFFF00" } };
-        var lines = clip.Text.Split('\n');
-
-        Assert.Equal((0, 0, 2), TextRenderer.HighlightedWord(clip, lines, Sec(10)));
-        Assert.Equal((0, 0, 2), TextRenderer.HighlightedWord(clip, lines, Sec(10.9)));
-        Assert.Equal((0, 3, 4), TextRenderer.HighlightedWord(clip, lines, Sec(11.1)));
-        Assert.Equal((0, 3, 4), TextRenderer.HighlightedWord(clip, lines, Sec(12.9)));
-        Assert.Equal((1, 0, 2), TextRenderer.HighlightedWord(clip, lines, Sec(13.1)));
-        Assert.Equal((1, 0, 2), TextRenderer.HighlightedWord(clip, lines, Sec(14)));
-
-        clip.Style.HighlightColor = null;
-        Assert.Null(TextRenderer.HighlightedWord(clip, lines, Sec(11)));
-
-        // 화면에서도 강조색이 왼쪽 단어에서 오른쪽 단어로 옮겨간다.
-        var sequence = new Sequence();
-        var caption = sequence.AddSubtitle(sequence.AddTrack<VideoTrack>(), Range(0, 4), "가나 다라마바")!;
-        caption.Style.Size = 150;
-        caption.Style.OutlineWidth = 0;
-        caption.Style.HighlightColor = "#FFFF00";
-        using var early = Render(sequence, 0.3);
-        using var late = Render(sequence, 3);
-        var (first, secondWord) = (Area(early, SKColors.Yellow), Area(late, SKColors.Yellow));
-        Assert.True(first.Count > 30 && secondWord.Count > 30);
-        Assert.True(first.Right < secondWord.Left);
-        Assert.True(Area(early, SKColors.White).Count > 30); // 나머지 단어는 원래 색
-    }
-
-    [Fact]
     public void 글자도_키프레임으로_움직인다()
     {
         var (sequence, clip) = TextSequence("이동", style => style.Color = "#FF0000");
@@ -280,6 +249,94 @@ public class TextTests
     }
 
     [Fact]
+    public void 효과는_시간에_따라_위치_크기_투명도를_바꾼다()
+    {
+        TextEffect[] effects =
+        [
+            new() { Kind = TextEffectKind.FadeIn, Start = 1, Duration = 0.5 },
+            new() { Kind = TextEffectKind.Move, Start = 0, Duration = 2, FromX = -10, FromY = 20 },
+            new() { Kind = TextEffectKind.Scale, Start = 0, Duration = 1, From = 50, To = 100 },
+            new() { Kind = TextEffectKind.FadeOut, Start = 4, Duration = 1 },
+        ];
+
+        // 페이드 인이 있으면 시작하기 전에는 보이지 않는다.
+        Assert.Equal(new TextMotion(-10, 20, 0.5, 0), TextEffects.At(effects, 0));
+        Assert.Equal(new TextMotion(-5, 10, 1, 0), TextEffects.At(effects, 1));
+        Assert.Equal(0.5, TextEffects.At(effects, 1.25).Opacity, 6);
+        Assert.Equal(new TextMotion(0, 0, 1, 1), TextEffects.At(effects, 3));
+        // 같은 종류(투명도)에서는 이미 시작한 것 중 가장 늦게 시작한 효과가 적용된다.
+        Assert.Equal(0.75, TextEffects.At(effects, 4.25).Opacity, 6);
+        Assert.Equal(0, TextEffects.At(effects, 9).Opacity);
+        Assert.Equal(new TextMotion(0, 0, 1, 1), TextEffects.At([], 1));
+
+        // 팝업: 진행의 40%에서 가장 커지고, 끝나면 100%로 자리 잡는다.
+        TextEffect[] popup = [new() { Kind = TextEffectKind.Popup, Duration = 1, From = 65, Peak = 120 }];
+        Assert.Equal(0.65, TextEffects.At(popup, 0).Scale, 6);
+        Assert.Equal(1.2, TextEffects.At(popup, 0.4).Scale, 6);
+        Assert.Equal(1, TextEffects.At(popup, 1).Scale, 6);
+        Assert.True(TextEffects.At(popup, 0.6).Scale is > 0.9 and < 1.2);
+
+        // 화면에서도: 페이드 인 전에는 안 보이고, 이동 효과는 클립의 자리에서 화면 크기의 %만큼 옮긴다.
+        var sequence = new Sequence();
+        var clip = sequence.AddText(Sec(0), "가나다");
+        clip.Style.Color = "#FF0000";
+        clip.Style.OutlineWidth = 0;
+        clip.Effects = [new() { Kind = TextEffectKind.FadeIn, Start = 1, Duration = 0.5 }, new() { Kind = TextEffectKind.Move, Duration = 2, FromX = -25 }];
+        using var hidden = Render(sequence, 0.5);
+        using var shown = Render(sequence, 2.5);
+        Assert.Equal(0, Area(hidden, SKColors.Red).Count);
+        Assert.True(Area(shown, SKColors.Red).Count > 50);
+
+        clip.Effects.RemoveAt(0);
+        using var start = Render(sequence, 0);
+        var (moved, rest) = (Area(start, SKColors.Red), Area(shown, SKColors.Red));
+        Assert.InRange(rest.Left - moved.Left, sequence.Preset.Width * 0.25 - 8, sequence.Preset.Width * 0.25 + 8);
+    }
+
+    [Fact]
+    public void 프리셋은_모양과_효과를_입히고_글꼴_크기_위치는_그대로_둔다()
+    {
+        var sequence = new Sequence();
+        var clip = sequence.AddText(Sec(0), "제목");
+        clip.Style = new TextStyle { Font = "Gulim", Size = 40, X = 30, Y = -50 };
+        clip.Keyframes[AnimatedProperty.Rotation] = [new(Sec(0), 90)];
+
+        var fade = new TextEffect { Kind = TextEffectKind.FadeIn, Duration = 0.5 };
+        var preset = new TextStylePreset("노랑", new TextStyle { Font = "Arial", Size = 200, X = 999, Color = "#FFE14D", OutlineWidth = 0 }, [fade]);
+        Assert.True(SequenceEdits.ApplyTextPreset(sequence, [clip], preset));
+
+        Assert.Equal(("#FFE14D", 0.0, "노랑"), (clip.Style.Color, clip.Style.OutlineWidth, clip.Style.Preset));
+        Assert.Equal(("Gulim", 40.0, 30.0, -50.0), (clip.Style.Font, clip.Style.Size, clip.Style.X, clip.Style.Y));
+        Assert.Empty(clip.Keyframes); // 예전 방식의 움직임은 지워진다
+        Assert.Equal([fade], clip.Effects);
+        Assert.NotSame(fade, clip.Effects[0]); // 복사본이라 프리셋을 건드리지 않는다
+
+        // 효과가 없는 프리셋을 입히면 효과가 사라진다. 잠긴 트랙의 클립은 건드리지 않는다.
+        SequenceEdits.ApplyTextPreset(sequence, [clip], new TextStylePreset("기본", new TextStyle()));
+        Assert.Empty(clip.Effects);
+        sequence.TrackOf(clip)!.Locked = true;
+        Assert.False(SequenceEdits.ApplyTextPreset(sequence, [clip], preset));
+        Assert.Equal("기본", clip.Style.Preset);
+
+        // 프리셋 파일: 효과가 담긴 것도, 효과가 없던 예전 형식도 읽힌다.
+        var path = Path.Combine(Path.GetTempPath(), "ngvid-preset-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            PresetFile.Save(path, new List<TextStylePreset> { preset });
+            var loaded = PresetFile.Load(path, () => new List<TextStylePreset>());
+            Assert.Equal([fade], loaded[0].Effects);
+
+            File.WriteAllText(path, """[{"name":"옛것","style":{"color":"#112233","highlightColor":"#FFFF00"}}]""");
+            var old = PresetFile.Load(path, () => new List<TextStylePreset>());
+            Assert.Equal(("옛것", "#112233", null), (old[0].Name, old[0].Style.Color, old[0].Effects));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void 글자_클립과_스타일이_저장된다()
     {
         var project = new Project();
@@ -287,7 +344,7 @@ public class TextTests
         text.Style = new TextStyle
         {
             Font = "Gulim", Size = 120, Bold = false, Color = "#112233", OutlineColor = "#445566", OutlineWidth = 3,
-            ShadowColor = "#778899", ShadowOffset = 4, BoxColor = "#80000000", X = -10, Y = 20, HighlightColor = "#FFFF00",
+            ShadowColor = "#778899", ShadowOffset = 4, BoxColor = "#80000000", X = -10, Y = 20,
         };
         project.Sequence.AddSubtitle(project.Sequence.AddTrack<VideoTrack>(), Range(0, 2), "자막");
 
@@ -297,7 +354,7 @@ public class TextTests
         Assert.Equal(json, ProjectSerializer.Serialize(loaded));
         var clip = Assert.IsType<TextClip>(loaded.Sequence.Tracks[1].Clips[0]);
         Assert.Equal("제목 \"1편\"\n둘째 줄", clip.Text);
-        Assert.Equal(("Gulim", 120.0, false, "#80000000", "#FFFF00"), (clip.Style.Font, clip.Style.Size, clip.Style.Bold, clip.Style.BoxColor, clip.Style.HighlightColor));
+        Assert.Equal(("Gulim", 120.0, false, "#80000000"), (clip.Style.Font, clip.Style.Size, clip.Style.Bold, clip.Style.BoxColor));
         Assert.Null(Assert.IsType<TextClip>(loaded.Sequence.Tracks[0].Clips[0]).Style.BoxColor);
         Assert.Equal(["기본", "팝업", "박스"], TextStylePreset.Defaults().Select(preset => preset.Name));
     }

@@ -176,9 +176,14 @@ public sealed class Sequence
         range = new TimeRange(SnapToFrame(range.Start < TimeSpan.Zero ? TimeSpan.Zero : range.Start), range.Duration);
         if (range.Duration <= TimeSpan.Zero || !IsFree(track, range)) return null;
 
-        var style = track.Clips.OfType<TextClip>().FirstOrDefault()?.Style.Clone()
-            ?? new TextStyle { Size = 64, Y = Preset.Height * 0.36 };
-        var clip = new TextClip { Text = text, Range = range, Style = style };
+        var first = track.Clips.OfType<TextClip>().FirstOrDefault();
+        var clip = new TextClip
+        {
+            Text = text,
+            Range = range,
+            Style = first?.Style.Clone() ?? new TextStyle { Size = 64, Y = Preset.Height * 0.36 },
+            Effects = first?.Effects.Select(effect => effect with { }).ToList() ?? [],
+        };
         track.Clips.Add(clip);
         track.Clips.SortByStart();
         return clip;

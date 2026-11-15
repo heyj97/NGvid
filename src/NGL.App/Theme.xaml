@@ -12,7 +12,7 @@
     <SolidColorBrush x:Key="Text2" Color="#C9CCD1" />
     <SolidColorBrush x:Key="Muted" Color="#A7ACB4" />
     <SolidColorBrush x:Key="Dim" Color="#8E949C" />
-    <SolidColorBrush x:Key="Accent" Color="#4C8DFF" />
+    <SolidColorBrush x:Key="Accent" Color="#D6F676" />
     <SolidColorBrush x:Key="OnAccent" Color="#0B0C0E" />
 
     <!-- 시안의 글꼴(Noto Sans KR, IBM Plex Mono)이 설치돼 있으면 쓰고, 없으면 윈도우 기본 글꼴로 보인다. -->
@@ -675,8 +675,26 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="#24406E" />
+                <Setter Property="Background" Value="#465032" />
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- 색 칸 옆의 작은 네모. 지금 색을 보여주고, 누르면 색 고르기 창이 열린다. -->
+    <Style x:Key="Swatch" TargetType="Button">
+        <Setter Property="DockPanel.Dock" Value="Right" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="ToolTip" Value="색 고르기" />
+        <Setter Property="AutomationProperties.Name" Value="색 고르기" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource InputLine}" BorderThickness="1" CornerRadius="4" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

@@ -213,20 +213,24 @@ public sealed class TextStyle
     /// <summary>화면 가운데에서 아래로 옮긴 거리(픽셀).</summary>
     public double Y { get; set; }
 
-    /// <summary>말하는 단어를 강조하는 색. null이면 강조하지 않는다. 단어별 시간은 글자 수 비율로 나눈다.</summary>
-    public string? HighlightColor { get; set; }
+    /// <summary>이 모양을 입힌 프리셋의 이름. 프리셋을 고치면 같은 이름을 쓰는 클립이 함께 바뀐다. 없으면 null.</summary>
+    public string? Preset { get; set; }
 
     public TextStyle Clone() => (TextStyle)MemberwiseClone();
 }
 
-/// <summary>이름을 붙여 저장해 둔 글자 스타일.</summary>
-public sealed record TextStylePreset(string Name, TextStyle Style)
+/// <summary>
+/// 이름을 붙여 저장해 둔 글자 모양(색·굵기·외곽선·그림자·배경 박스)과 효과.
+/// 글꼴·크기·위치는 클립마다 따로 정하므로 프리셋의 값은 쓰이지 않는다.
+/// </summary>
+public sealed record TextStylePreset(string Name, TextStyle Style, List<TextEffect>? Effects = null)
 {
     /// <summary>처음 쓸 때 들어 있는 프리셋.</summary>
     public static List<TextStylePreset> Defaults() =>
     [
         new("기본", new TextStyle()),
-        new("팝업", new TextStyle { Size = 88, Color = "#FFE14D", OutlineWidth = 10 }),
+        new("팝업", new TextStyle { Color = "#FFE14D", OutlineWidth = 10 },
+            [new TextEffect { Kind = TextEffectKind.Popup, Duration = 0.3, From = 75, Peak = 111 }]),
         new("박스", new TextStyle { OutlineWidth = 0, BoxColor = "#CC000000" }),
     ];
 }
@@ -243,6 +247,9 @@ public abstract class TextualClip : Clip
         get => _style;
         set => _style = value ?? throw new ArgumentNullException(nameof(value));
     }
+
+    /// <summary>등장·퇴장 같은 효과들. 텍스트 프리셋을 입히면 프리셋의 것으로 바뀐다.</summary>
+    public List<TextEffect> Effects { get; set; } = [];
 }
 
 /// <summary>제목·설명·자막 같은 글자. 영상 트랙에 올린다.</summary>

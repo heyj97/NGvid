@@ -428,8 +428,33 @@ public static class SequenceEdits
     public static bool ApplyStyleToTrack(Sequence sequence, TextualClip source)
     {
         if (sequence.TrackOf(source) is not { Locked: false } track) return false;
-        foreach (var clip in track.Clips.OfType<TextualClip>().Where(clip => clip != source)) clip.Style = source.Style.Clone();
+        foreach (var clip in track.Clips.OfType<TextualClip>().Where(clip => clip != source))
+        {
+            clip.Style = source.Style.Clone();
+            clip.Effects = source.Effects.Select(effect => effect with { }).ToList();
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// 프리셋의 모양과 효과를 텍스트 클립들에 입힌다. 글꼴·크기·위치는 클립의 것을 그대로 둔다.
+    /// 효과는 프리셋의 것으로 통째로 바뀌고, 예전 방식의 움직임(키프레임)은 지워진다.
+    /// </summary>
+    public static bool ApplyTextPreset(Sequence sequence, IEnumerable<Clip> clips, TextStylePreset preset)
+    {
+        var targets = Editable(sequence, clips).OfType<TextualClip>().ToList();
+        foreach (var clip in targets)
+        {
+            var style = preset.Style.Clone();
+            (style.Font, style.Size, style.X, style.Y, style.Preset) = (clip.Style.Font, clip.Style.Size, clip.Style.X, clip.Style.Y, preset.Name);
+            clip.Style = style;
+
+            clip.Keyframes.Clear();
+            clip.Effects = (preset.Effects ?? []).Select(effect => effect with { }).ToList();
+        }
+
+        return targets.Count > 0;
     }
 
     /// <summary>클립의 움직임(모든 키프레임)을 프리셋으로 만든다.</summary>
