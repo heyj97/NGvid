@@ -133,7 +133,7 @@ public partial class MainWindow : Window
         if (PromptWindow.Ask(this, "스타일 프리셋 이름", "내 스타일") is { } name) _viewModel.SaveStylePreset(name);
     }
 
-    /// <summary>자막 목록 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
+    /// <summary>텍스트 목록 창을 연다. 편집 창과 함께 띄워 두고 쓸 수 있다.</summary>
     private void OnCaptionListClick(object sender, RoutedEventArgs e) => new CaptionListWindow(_viewModel) { Owner = this }.Show();
 
     private void OnSavePresetClick(object sender, RoutedEventArgs e)
@@ -157,6 +157,11 @@ public partial class MainWindow : Window
 
     private void OnNewClick(object sender, RoutedEventArgs e) =>
         new NewProjectWindow(_viewModel.CreateProject) { Owner = this }.ShowDialog();
+
+    // 문구는 치는 대로 미리보기에 보이고, 칸을 떠날 때 한 번의 편집으로 기록된다.
+    private void OnTextContentFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.BeginLiveEdit();
+
+    private void OnTextContentBlur(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.CommitLiveEdit();
 
     private void OnNewFromLinkClick(object sender, RoutedEventArgs e) =>
         new NewProjectWindow(_viewModel.CreateProject, path => _viewModel.Import([path])) { Owner = this }.ShowDialog();
@@ -309,7 +314,6 @@ public partial class MainWindow : Window
             case Key.L: _viewModel.ToggleLoopCommand.Execute(null); break;
             case Key.M: _viewModel.AddMarkerCommand.Execute(null); break;
             case Key.T: _viewModel.AddTextCommand.Execute(null); break;
-            case Key.C: _viewModel.AddCaptionCommand.Execute(null); break;
             case Key.S: _viewModel.SplitCommand.Execute(null); break;
             case Key.Delete: _viewModel.DeleteCommand.Execute(null); break;
             default: return;

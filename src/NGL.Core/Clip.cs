@@ -181,7 +181,7 @@ public sealed class AudioClip : MediaClip
 
 public sealed class ImageClip : VisualClip;
 
-/// <summary>글자의 모양과 위치. 텍스트 클립과 자막이 함께 쓴다.</summary>
+/// <summary>글자의 모양과 위치.</summary>
 public sealed class TextStyle
 {
     public string Font { get; set; } = "Malgun Gothic";
@@ -245,8 +245,5 @@ public abstract class TextualClip : Clip
     }
 }
 
-/// <summary>제목·설명 같은 자유 텍스트. 영상 트랙에 올린다.</summary>
+/// <summary>제목·설명·자막 같은 글자. 영상 트랙에 올린다.</summary>
 public sealed class TextClip : TextualClip;
-
-/// <summary>자막 트랙에 올리는 자막 한 줄.</summary>
-public sealed class CaptionClip : TextualClip;

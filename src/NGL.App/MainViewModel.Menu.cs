@@ -59,10 +59,15 @@ public partial class MainViewModel
     }
 
     /// <summary>클립이 없는 곳의 메뉴.</summary>
-    public List<MenuEntry> EmptyMenu() =>
+    /// <param name="track">누른 자리의 트랙(없으면 null)과 시각. 텍스트를 거기에 놓는다.</param>
+    public List<MenuEntry> EmptyMenu(Track? track, TimeSpan time) =>
     [
         new("붙여넣기", () => PasteCommand.Execute(null), "Ctrl+V"),
         new("마커 추가", () => AddMarkerCommand.Execute(null), "M"),
+        new("텍스트 추가", () => AddTextAt(track, time)),
+        MenuEntry.Separator,
+        new("영상 트랙 추가", () => AddTrackCommand.Execute("video")),
+        new("오디오 트랙 추가", () => AddTrackCommand.Execute("audio")),
     ];
 
     private static void AddSection(List<MenuEntry> menu, List<MenuEntry> items)

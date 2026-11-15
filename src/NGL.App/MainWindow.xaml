@@ -111,14 +111,9 @@
                         <Separator />
                         <MenuItem x:Name="FreezeFrameItem" Header="정지 프레임 만들기" Command="{Binding FreezeFrameCommand}" />
                     </MenuItem>
-                    <MenuItem x:Name="TextMenu" Header="텍스트·자막" Padding="10,5" IsEnabled="{Binding HasProject}">
-                        <MenuItem x:Name="AddTextItem" Header="텍스트 추가" InputGestureText="T" Command="{Binding AddTextCommand}" />
-                        <MenuItem x:Name="AddCaptionItem" Header="자막 추가" InputGestureText="C" Command="{Binding AddCaptionCommand}" />
-                        <Separator />
-                        <MenuItem x:Name="CaptionListItem" Header="자막 목록…" Click="OnCaptionListClick" />
-                    </MenuItem>
                     <MenuItem x:Name="ViewMenu" Header="보기" Padding="10,5" IsEnabled="{Binding HasProject}">
                         <MenuItem x:Name="SafeAreaItem" Header="안전 영역 표시" IsCheckable="True" IsChecked="{Binding ShowSafeArea}" />
+                        <MenuItem x:Name="CaptionListItem" Header="텍스트 목록…" Click="OnCaptionListClick" />
                         <MenuItem x:Name="ResetLayoutItem" Header="레이아웃 초기화" Click="OnResetLayoutClick"
                                   ToolTip="보관함·속성 패널의 너비와 타임라인의 높이를 처음 크기로 되돌립니다" />
                     </MenuItem>
@@ -585,11 +580,12 @@
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
 
-                    <!-- 텍스트·자막 -->
+                    <!-- 텍스트 -->
                     <StackPanel x:Name="TextInspector" Visibility="{Binding HasTextSelection, Converter={StaticResource Visible}}">
                         <TextBlock x:Name="TextTitle" Text="{Binding TextTitle}" Style="{StaticResource Title}" />
-                        <TextBox x:Name="TextContentBox" FontFamily="{StaticResource Ui}" FontSize="13" Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 Width="Auto" HorizontalAlignment="Stretch" MinHeight="54" Margin="0,0,0,8" ToolTip="문구. Enter로 줄을 바꾸고, 다른 곳을 눌러 확정합니다." />
+                        <TextBox x:Name="TextContentBox" FontFamily="{StaticResource Ui}" FontSize="13" Text="{Binding TextContent, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
+                                 GotKeyboardFocus="OnTextContentFocus" LostKeyboardFocus="OnTextContentBlur"
+                                 Width="Auto" HorizontalAlignment="Stretch" MinHeight="54" Margin="0,0,0,8" ToolTip="문구. Enter로 줄을 바꿉니다." />
                         <DockPanel>
                             <ComboBox x:Name="FontBox" DockPanel.Dock="Right" Width="150" ItemsSource="{x:Static local:MainViewModel.FontNames}"
                                       SelectedItem="{Binding FontName}" Focusable="False" />
@@ -621,7 +617,7 @@
                             <TextBox x:Name="BoxColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding BoxColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="배경 박스" Style="{StaticResource Label}" ToolTip="색을 적으면 글자 뒤에 박스를 깝니다. 비우면 없음. 예: #CC000000" />
                         </DockPanel>
-                        <DockPanel Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}">
+                        <DockPanel>
                             <TextBox x:Name="HighlightColorBox" DockPanel.Dock="Right" Width="90" Text="{Binding HighlightColor, UpdateSourceTrigger=LostFocus}" KeyDown="OnNameKeyDown" />
                             <TextBlock Text="단어 강조" Style="{StaticResource Label}" ToolTip="색을 적으면 말하는 단어를 그 색으로 강조합니다. 비우면 없음. 예: #FFE14D" />
                         </DockPanel>
@@ -642,8 +638,7 @@
                         </DockPanel>
                         <Button x:Name="SaveStylePresetButton" Content="이 스타일을 프리셋으로 저장" Click="OnSaveStylePresetClick" Margin="0,0,0,6" />
                         <Button x:Name="DeleteStylePresetButton" Content="고른 프리셋 삭제" Command="{Binding DeleteStylePresetCommand}" Margin="0,0,0,6" />
-                        <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 자막에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
-                                Visibility="{Binding IsCaptionSelection, Converter={StaticResource Visible}}"
+                        <Button x:Name="ApplyStyleToTrackButton" Content="이 트랙의 모든 텍스트에 적용" Command="{Binding ApplyStyleToTrackCommand}" Margin="0"
                                 ToolTip="문구와 시간은 그대로 두고 스타일만 복사합니다" />
                         <Border Style="{StaticResource Divider}" Margin="-16,4,-16,12" />
                     </StackPanel>
@@ -802,7 +797,6 @@
                                     <ContextMenu>
                                         <MenuItem Header="영상 트랙" Command="{Binding AddTrackCommand}" CommandParameter="video" />
                                         <MenuItem Header="오디오 트랙" Command="{Binding AddTrackCommand}" CommandParameter="audio" />
-                                        <MenuItem Header="자막 트랙" Command="{Binding AddTrackCommand}" CommandParameter="caption" />
                                     </ContextMenu>
                                 </Button.ContextMenu>
                             </Button>

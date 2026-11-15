@@ -34,9 +34,9 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | | `frameRate` | `30` 또는 `60` |
 | | `markers` | 마커 목록 |
 | | `tracks` | 트랙 목록. 배열 순서가 트랙 순서이고 첫 트랙이 화면 맨 위에 그려진다 |
-| 트랙 | `type` | `VideoTrack`, `AudioTrack`, `CaptionTrack` |
+| 트랙 | `type` | `VideoTrack`, `AudioTrack` |
 | | `id`, `name`, `color` | 색상은 `#RRGGBB` |
-| | `locked`, `hidden`, `muted`, `solo` | 잠금, 숨김(영상·자막), 음소거·솔로(오디오) |
+| | `locked`, `hidden`, `muted`, `solo` | 잠금, 숨김(영상), 음소거·솔로(오디오) |
 | | `clips` | 클립 목록 |
 | 클립 | `type` | 아래 표 참고 |
 | | `id` | |
@@ -59,7 +59,6 @@ NGvid 프로젝트는 폴더 하나다. 폴더째 옮겨도 열린다.
 | `ImageClip` | `VideoTrack` | `assetId` (`sourceStart`는 쓰지 않음), 변형 속성 |
 | `TextClip` | `VideoTrack` | `text`, `style` |
 | `AudioClip` | `AudioTrack` | `assetId`, `sourceStart`, `volume`(0~2), `fadeIn`, `fadeOut` |
-| `CaptionClip` | `CaptionTrack` | `text`, `style` |
 
 변형 속성(영상·이미지 클립): `x`, `y`(화면 가운데에서 옮긴 픽셀), `scale`(0.1~4), `rotation`(시계 방향, 도), `opacity`(0~1),
 `blend`(`Normal`·`Multiply`·`Screen`·`Overlay`·`Add`), `fit`(`Fit`·`Fill`), `cropLeft`·`cropTop`·`cropRight`·`cropBottom`(0~0.95),

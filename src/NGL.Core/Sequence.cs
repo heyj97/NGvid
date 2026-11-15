@@ -52,25 +52,13 @@ public sealed class Sequence
 
     /// <summary>
     /// 새 트랙을 "영상 2"처럼 이름 붙여 추가한다.
-    /// 자막은 맨 위, 영상은 기존 영상 트랙들 위, 오디오는 맨 아래에 놓는다.
+    /// 영상은 맨 위, 오디오는 맨 아래에 놓는다.
     /// </summary>
     public T AddTrack<T>() where T : Track, new()
     {
         var track = new T();
-        track.Name = track switch
-        {
-            VideoTrack => "영상",
-            AudioTrack => "오디오",
-            _ => "자막",
-        } + " " + (Tracks.OfType<T>().Count() + 1);
-
-        var index = track switch
-        {
-            CaptionTrack => 0,
-            VideoTrack => Tracks.FindIndex(existing => existing is not CaptionTrack) is var first and >= 0 ? first : Tracks.Count,
-            _ => Tracks.Count,
-        };
-        Tracks.Insert(index, track);
+        track.Name = (track is VideoTrack ? "영상" : "오디오") + " " + (Tracks.OfType<T>().Count() + 1);
+        Tracks.Insert(track is VideoTrack ? 0 : Tracks.Count, track);
         return track;
     }
 
@@ -153,7 +141,7 @@ public sealed class Sequence
         return result;
     }
 
-    // ───── 텍스트와 자막 ─────
+    // ───── 텍스트 ─────
 
     /// <summary>텍스트 클립을 처음 놓을 때의 길이.</summary>
     public static readonly TimeSpan DefaultTextDuration = TimeSpan.FromSeconds(3);
@@ -162,33 +150,35 @@ public sealed class Sequence
     /// 텍스트 클립을 time에 놓는다. 그 자리가 빈 영상 트랙(잠기지 않은 것 중 위쪽부터)에 놓고,
     /// 없으면 맨 위에 새 영상 트랙을 만든다. 텍스트는 영상 위에 보여야 하기 때문이다.
     /// </summary>
-    public TextClip AddText(TimeSpan time, string text)
+    /// <param name="preferred">먼저 써 볼 트랙. 영상 트랙이 아니거나 잠겼거나 그 자리가 차 있으면 위의 규칙을 따른다.</param>
+    public TextClip AddText(TimeSpan time, string text, Track? preferred = null)
     {
         var clip = new TextClip
         {
             Text = text,
             Range = new TimeRange(SnapToFrame(time < TimeSpan.Zero ? TimeSpan.Zero : time), DefaultTextDuration),
         };
-        var track = Tracks.OfType<VideoTrack>().FirstOrDefault(each => !each.Locked && IsFree(each, clip.Range)) ?? AddTrack<VideoTrack>();
+        var track = preferred as VideoTrack is { Locked: false } wanted && IsFree(wanted, clip.Range)
+            ? wanted
+            : Tracks.OfType<VideoTrack>().FirstOrDefault(each => !each.Locked && IsFree(each, clip.Range)) ?? AddTrack<VideoTrack>();
         track.Clips.Add(clip);
         track.Clips.SortByStart();
         return clip;
     }
 
     /// <summary>
-    /// 자막을 놓는다. track이 null이면 잠기지 않은 첫 자막 트랙(없으면 새로)에 놓는다.
-    /// 스타일은 그 트랙의 첫 자막을 따르고, 첫 자막이면 화면 아래쪽 기본 위치에 놓는다.
-    /// 그 자리에 다른 자막이 있으면 놓지 않고 null을 돌려준다.
+    /// 자막 줄을 track의 range에 텍스트 클립으로 놓는다. (텍스트 목록 창과 자막 파일 가져오기에서 쓴다.)
+    /// 스타일은 그 트랙의 첫 텍스트를 따르고, 첫 텍스트이면 화면 아래쪽에 자막 크기로 놓는다.
+    /// 그 자리에 다른 클립이 있으면 놓지 않고 null을 돌려준다.
     /// </summary>
-    public CaptionClip? AddCaption(CaptionTrack? track, TimeRange range, string text)
+    public TextClip? AddSubtitle(VideoTrack track, TimeRange range, string text)
     {
-        track ??= FirstOrNew<CaptionTrack>();
         range = new TimeRange(SnapToFrame(range.Start < TimeSpan.Zero ? TimeSpan.Zero : range.Start), range.Duration);
         if (range.Duration <= TimeSpan.Zero || !IsFree(track, range)) return null;
 
-        var style = track.Clips.OfType<CaptionClip>().FirstOrDefault()?.Style.Clone()
+        var style = track.Clips.OfType<TextClip>().FirstOrDefault()?.Style.Clone()
             ?? new TextStyle { Size = 64, Y = Preset.Height * 0.36 };
-        var clip = new CaptionClip { Text = text, Range = range, Style = style };
+        var clip = new TextClip { Text = text, Range = range, Style = style };
         track.Clips.Add(clip);
         track.Clips.SortByStart();
         return clip;

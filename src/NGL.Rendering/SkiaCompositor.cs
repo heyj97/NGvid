@@ -30,7 +30,6 @@ public sealed class SkiaCompositor(Func<string, CubeLut?>? lutOf = null) : IFram
         // 목록의 첫 트랙이 맨 위에 보여야 하므로 마지막 트랙부터 그린다.
         for (var i = sequence.Tracks.Count - 1; i >= 0; i--)
         {
-            // 영상 트랙과 자막 트랙을 목록 순서대로 겹친다. (자막 트랙은 보통 맨 위에 있다.)
             var track = sequence.Tracks[i];
             if (track is AudioTrack || track.Hidden) continue;
 

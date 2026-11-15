@@ -4,7 +4,7 @@ using SkiaSharp;
 
 namespace NGL.Rendering;
 
-/// <summary>텍스트 클립과 자막을 그린다. 글자는 화면 가운데(+스타일의 위치)를 중심으로 가운데 정렬된다.</summary>
+/// <summary>텍스트 클립을 그린다. 글자는 화면 가운데(+스타일의 위치)를 중심으로 가운데 정렬된다.</summary>
 public static partial class TextRenderer
 {
     private static readonly Dictionary<(string Font, bool Bold), SKTypeface> Typefaces = [];

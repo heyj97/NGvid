@@ -214,7 +214,6 @@ public sealed class TimelineView : FrameworkElement
         var label = clip switch
         {
             TextClip text => text.Text,
-            CaptionClip caption => caption.Text,
             _ => asset?.Name ?? "(원본 없음)",
         };
         dc.DrawText(Text(label, ClipText, TextFace, 11), new Point(textLeft, rect.Top + 3));
@@ -497,7 +496,7 @@ public sealed class TimelineView : FrameworkElement
         }
         else if (point.Y > RulerHeight)
         {
-            Open(model.EmptyMenu());
+            Open(model.EmptyMenu(TrackAt(point), TimeAt(point.X)));
         }
     }
 

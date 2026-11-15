@@ -175,6 +175,7 @@ public partial class MainViewModel
     /// <summary>마우스로 끄는 동안의 변경을 시작한다. 끝나면 CommitLiveEdit로 한 번의 편집으로 기록한다.</summary>
     public void BeginLiveEdit()
     {
+        CommitLiveEdit(); // 문구를 치던 중에 끌기 시작해도 앞의 변경이 기록에서 빠지지 않게 한다
         if (Project is { } project) _beforeLiveEdit = NGL.IO.SequenceSnapshot.Take(project.Sequence);
     }
 

@@ -424,7 +424,7 @@ public static class SequenceEdits
         _ => clip is VisualClip or TextualClip,
     };
 
-    /// <summary>source의 글자 스타일을 같은 트랙의 모든 자막에 복사한다. 문구와 시간은 그대로다.</summary>
+    /// <summary>source의 글자 스타일을 같은 트랙의 모든 텍스트에 복사한다. 문구와 시간은 그대로다.</summary>
     public static bool ApplyStyleToTrack(Sequence sequence, TextualClip source)
     {
         if (sequence.TrackOf(source) is not { Locked: false } track) return false;
@@ -453,7 +453,5 @@ public static class SequenceEdits
     }
 
     private static Track NewTrack(Sequence sequence, Type type) =>
-        type == typeof(AudioTrack) ? sequence.AddTrack<AudioTrack>()
-        : type == typeof(CaptionTrack) ? sequence.AddTrack<CaptionTrack>()
-        : sequence.AddTrack<VideoTrack>();
+        type == typeof(AudioTrack) ? sequence.AddTrack<AudioTrack>() : sequence.AddTrack<VideoTrack>();
 }

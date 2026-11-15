@@ -34,16 +34,12 @@ public class CoreModelTests
         video.Clips.Add(new ImageClip());
         video.Clips.Add(new TextClip());
         Assert.Throws<ArgumentException>(() => video.Clips.Add(new AudioClip()));
-        Assert.Throws<ArgumentException>(() => video.Clips[0] = new CaptionClip());
+        Assert.Throws<ArgumentException>(() => video.Clips[0] = new AudioClip());
         Assert.Equal(3, video.Clips.Count);
 
         var audio = new AudioTrack();
         audio.Clips.Add(new AudioClip());
         Assert.Throws<ArgumentException>(() => audio.Clips.Add(new VideoClip()));
-
-        var caption = new CaptionTrack();
-        caption.Clips.Add(new CaptionClip());
-        Assert.Throws<ArgumentException>(() => caption.Clips.Add(new TextClip()));
     }
 
     [Fact]

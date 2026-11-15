@@ -12,20 +12,19 @@ public class TimelineModelTests
     private static TimeSpan Sec(double seconds) => TimeSpan.FromSeconds(seconds);
 
     [Fact]
-    public void 새_트랙은_번호가_붙고_자막_영상_오디오_순으로_놓인다()
+    public void 새_트랙은_번호가_붙고_영상은_맨_위_오디오는_맨_아래에_놓인다()
     {
         var sequence = new Sequence();
 
         var audio1 = sequence.AddTrack<AudioTrack>();
         var video1 = sequence.AddTrack<VideoTrack>();
-        var caption1 = sequence.AddTrack<CaptionTrack>();
         var video2 = sequence.AddTrack<VideoTrack>();
         var audio2 = sequence.AddTrack<AudioTrack>();
 
-        // 새 영상 트랙은 기존 영상 트랙 위(자막 아래)에 생긴다.
-        Assert.Equal([caption1, video2, video1, audio1, audio2], sequence.Tracks);
-        Assert.Equal(["자막 1", "영상 2", "영상 1", "오디오 1", "오디오 2"], sequence.Tracks.Select(track => track.Name));
-        Assert.Equal(["#C79A2B", "#4C8DFF", "#4C8DFF", "#3FA87A", "#3FA87A"], sequence.Tracks.Select(track => track.Color));
+        // 새 영상 트랙은 기존 영상 트랙 위에 생긴다.
+        Assert.Equal([video2, video1, audio1, audio2], sequence.Tracks);
+        Assert.Equal(["영상 2", "영상 1", "오디오 1", "오디오 2"], sequence.Tracks.Select(track => track.Name));
+        Assert.Equal(["#4C8DFF", "#4C8DFF", "#3FA87A", "#3FA87A"], sequence.Tracks.Select(track => track.Color));
     }
 
     [Fact]

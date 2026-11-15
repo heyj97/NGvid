@@ -112,8 +112,7 @@ public partial class MainViewModel
             switch (kind)
             {
                 case "video": project.Sequence.AddTrack<VideoTrack>(); break;
-                case "audio": project.Sequence.AddTrack<AudioTrack>(); break;
-                default: project.Sequence.AddTrack<CaptionTrack>(); break;
+                default: project.Sequence.AddTrack<AudioTrack>(); break;
             }
         });
     }

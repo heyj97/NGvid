@@ -131,9 +131,9 @@ public class TextTests
     public void 자막은_트랙_순서대로_영상_위에_겹치고_숨긴_트랙은_그리지_않는다()
     {
         var sequence = new Sequence();
-        var upper = sequence.AddCaption(null, Range(0, 2), "위 자막")!;
-        var second = sequence.AddTrack<CaptionTrack>();
-        var lower = sequence.AddCaption(second, Range(0, 2), "아래 자막")!;
+        var upper = sequence.AddSubtitle(sequence.AddTrack<VideoTrack>(), Range(0, 2), "위 자막")!;
+        var second = sequence.AddTrack<VideoTrack>();
+        var lower = sequence.AddSubtitle(second, Range(0, 2), "아래 자막")!;
         upper.Style.Color = "#FF0000";
         lower.Style.Color = "#00FF00";
         lower.Style.Y = -200;
@@ -154,7 +154,7 @@ public class TextTests
     public void 단어_강조는_글자_수_비율로_시간을_나눠_차례로_옮겨간다()
     {
         // 글자 수 2 + 4 + 2 = 8 → 4초 동안 "가나" 0~1초, "다라마바" 1~3초, "사아" 3~4초
-        var clip = new CaptionClip { Text = "가나 다라마바\n사아", Range = Range(10, 4), Style = { HighlightColor = "#FFFF00" } };
+        var clip = new TextClip { Text = "가나 다라마바\n사아", Range = Range(10, 4), Style = { HighlightColor = "#FFFF00" } };
         var lines = clip.Text.Split('\n');
 
         Assert.Equal((0, 0, 2), TextRenderer.HighlightedWord(clip, lines, Sec(10)));
@@ -169,7 +169,7 @@ public class TextTests
 
         // 화면에서도 강조색이 왼쪽 단어에서 오른쪽 단어로 옮겨간다.
         var sequence = new Sequence();
-        var caption = sequence.AddCaption(null, Range(0, 4), "가나 다라마바")!;
+        var caption = sequence.AddSubtitle(sequence.AddTrack<VideoTrack>(), Range(0, 4), "가나 다라마바")!;
         caption.Style.Size = 150;
         caption.Style.OutlineWidth = 0;
         caption.Style.HighlightColor = "#FFFF00";
@@ -226,18 +226,18 @@ public class TextTests
     public void 새_자막은_트랙의_첫_자막_스타일을_따르고_겹치는_자리에는_놓지_않는다()
     {
         var sequence = new Sequence { Preset = SequencePreset.Portrait };
-        var first = sequence.AddCaption(null, Range(0, 2), "첫 자막")!;
-        var track = Assert.IsType<CaptionTrack>(sequence.Tracks[0]);
+        var track = sequence.AddTrack<VideoTrack>();
+        var first = sequence.AddSubtitle(track, Range(0, 2), "첫 자막")!;
         Assert.Equal(1920 * 0.36, first.Style.Y); // 화면 아래쪽 기본 위치
 
         first.Style.Color = "#FFE14D";
         first.Style.Size = 90;
-        var second = sequence.AddCaption(track, Range(2, 1.5), "둘째")!;
+        var second = sequence.AddSubtitle(track, Range(2, 1.5), "둘째")!;
         Assert.Equal(("#FFE14D", 90.0, first.Style.Y), (second.Style.Color, second.Style.Size, second.Style.Y));
         Assert.NotSame(first.Style, second.Style); // 복사본이라 따로 고칠 수 있다
 
-        Assert.Null(sequence.AddCaption(track, Range(1, 2), "겹침"));
-        Assert.Null(sequence.AddCaption(track, Range(5, 0), "길이 없음"));
+        Assert.Null(sequence.AddSubtitle(track, Range(1, 2), "겹침"));
+        Assert.Null(sequence.AddSubtitle(track, Range(5, 0), "길이 없음"));
         Assert.Equal(2, track.Clips.Count);
     }
 
@@ -245,9 +245,10 @@ public class TextTests
     public void 모든_자막에_적용은_문구와_시간은_두고_스타일만_복사한다()
     {
         var sequence = new Sequence();
-        var a = sequence.AddCaption(null, Range(0, 1), "하나")!;
-        var b = sequence.AddCaption(null, Range(1, 1), "둘")!;
-        var other = sequence.AddCaption(sequence.AddTrack<CaptionTrack>(), Range(0, 1), "다른 트랙")!;
+        var shared = sequence.AddTrack<VideoTrack>();
+        var a = sequence.AddSubtitle(shared, Range(0, 1), "하나")!;
+        var b = sequence.AddSubtitle(shared, Range(1, 1), "둘")!;
+        var other = sequence.AddSubtitle(sequence.AddTrack<VideoTrack>(), Range(0, 1), "다른 트랙")!;
         b.Style = new TextStyle { Color = "#00FF00", Size = 100, BoxColor = "#CC000000", X = 50 };
 
         Assert.True(SequenceEdits.ApplyStyleToTrack(sequence, b));
@@ -262,6 +263,23 @@ public class TextTests
     }
 
     [Fact]
+    public void 텍스트는_고른_트랙이_비어_있으면_거기에_놓고_아니면_빈_영상_트랙을_찾는다()
+    {
+        var sequence = new Sequence();
+        var lower = sequence.AddTrack<VideoTrack>();
+        var upper = sequence.AddTrack<VideoTrack>();
+        var audio = sequence.AddTrack<AudioTrack>();
+
+        var first = sequence.AddText(Sec(1), "하나", lower);
+        Assert.Same(lower, sequence.TrackOf(first));
+
+        // 같은 자리는 차 있고, 오디오 트랙에는 놓을 수 없으므로 위쪽의 빈 영상 트랙으로 간다.
+        Assert.Same(upper, sequence.TrackOf(sequence.AddText(Sec(2), "겹침", lower)));
+        Assert.IsType<VideoTrack>(sequence.TrackOf(sequence.AddText(Sec(10), "오디오 위", audio)));
+        Assert.Empty(audio.Clips);
+    }
+
+    [Fact]
     public void 글자_클립과_스타일이_저장된다()
     {
         var project = new Project();
@@ -271,7 +289,7 @@ public class TextTests
             Font = "Gulim", Size = 120, Bold = false, Color = "#112233", OutlineColor = "#445566", OutlineWidth = 3,
             ShadowColor = "#778899", ShadowOffset = 4, BoxColor = "#80000000", X = -10, Y = 20, HighlightColor = "#FFFF00",
         };
-        project.Sequence.AddCaption(null, Range(0, 2), "자막");
+        project.Sequence.AddSubtitle(project.Sequence.AddTrack<VideoTrack>(), Range(0, 2), "자막");
 
         var json = ProjectSerializer.Serialize(project);
         var loaded = ProjectSerializer.Deserialize(json);
@@ -280,7 +298,7 @@ public class TextTests
         var clip = Assert.IsType<TextClip>(loaded.Sequence.Tracks[1].Clips[0]);
         Assert.Equal("제목 \"1편\"\n둘째 줄", clip.Text);
         Assert.Equal(("Gulim", 120.0, false, "#80000000", "#FFFF00"), (clip.Style.Font, clip.Style.Size, clip.Style.Bold, clip.Style.BoxColor, clip.Style.HighlightColor));
-        Assert.Null(Assert.IsType<CaptionClip>(loaded.Sequence.Tracks[0].Clips[0]).Style.BoxColor);
+        Assert.Null(Assert.IsType<TextClip>(loaded.Sequence.Tracks[0].Clips[0]).Style.BoxColor);
         Assert.Equal(["기본", "팝업", "박스"], TextStylePreset.Defaults().Select(preset => preset.Name));
     }
 

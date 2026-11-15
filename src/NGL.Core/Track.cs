@@ -14,7 +14,7 @@ public abstract class Track
     /// <summary>잠근 트랙의 클립은 편집할 수 없다.</summary>
     public bool Locked { get; set; }
 
-    /// <summary>숨긴 영상·자막 트랙은 화면에 그리지 않는다.</summary>
+    /// <summary>숨긴 영상 트랙은 화면에 그리지 않는다.</summary>
     public bool Hidden { get; set; }
 
     /// <summary>음소거한 오디오 트랙은 소리를 내지 않는다.</summary>
@@ -61,13 +61,6 @@ public sealed class AudioTrack : Track
     }
 
     public override bool Accepts(Clip clip) => clip is AudioClip;
-}
-
-public sealed class CaptionTrack : Track
-{
-    public CaptionTrack() => Color = "#C79A2B";
-
-    public override bool Accepts(Clip clip) => clip is CaptionClip;
 }
 
 /// <summary>트랙이 받아들이는 종류의 클립만 담는 목록.</summary>

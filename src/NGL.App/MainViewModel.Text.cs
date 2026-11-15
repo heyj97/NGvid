@@ -8,12 +8,12 @@ using NGL.IO;
 
 namespace NGL.App;
 
-/// <summary>텍스트·자막: 추가, 속성 패널의 글자 항목, 스타일 프리셋, 자막 파일 가져오기·내보내기.</summary>
+/// <summary>텍스트: 추가, 속성 패널의 글자 항목, 스타일 프리셋, 자막 파일 가져오기·내보내기.</summary>
 public partial class MainViewModel
 {
     private static readonly string[] TextProperties =
     [
-        nameof(HasTextSelection), nameof(IsCaptionSelection), nameof(TextTitle), nameof(TextContent), nameof(FontName),
+        nameof(HasTextSelection), nameof(TextTitle), nameof(TextContent), nameof(FontName),
         nameof(TextSize), nameof(TextBold), nameof(TextColor), nameof(OutlineColor), nameof(OutlineWidth), nameof(ShadowColor),
         nameof(ShadowOffset), nameof(BoxColor), nameof(TextX), nameof(TextY), nameof(HighlightColor),
     ];
@@ -29,42 +29,30 @@ public partial class MainViewModel
 
     public int StylePresetIndex { get; set; }
 
-    /// <summary>선택한 텍스트·자막 클립들. 패널에는 첫 클립의 값이 보이고, 고치면 모두에 적용된다.</summary>
+    /// <summary>선택한 텍스트 클립들. 패널에는 첫 클립의 값이 보이고, 고치면 모두에 적용된다.</summary>
     private List<TextualClip> SelectedTextClips() => SelectedClips().OfType<TextualClip>().ToList();
 
     private TextualClip? FirstText => SelectedTextClips().FirstOrDefault();
 
     public bool HasTextSelection => FirstText is not null;
 
-    public bool IsCaptionSelection => FirstText is CaptionClip;
-
     public string TextTitle => SelectedTextClips() is { Count: > 0 } clips
-        ? (clips[0] is CaptionClip ? "자막" : "텍스트") + (clips.Count > 1 ? $" {clips.Count}개" : "")
+        ? "텍스트" + (clips.Count > 1 ? $" {clips.Count}개" : "")
         : "";
 
     // ───── 추가 ─────
 
     /// <summary>재생 위치에 텍스트 클립을 놓고 선택한다.</summary>
     [RelayCommand]
-    private void AddText()
+    private void AddText() => AddTextAt(null, Position);
+
+    /// <summary>time에 텍스트 클립을 놓고 선택한다. track이 영상 트랙이고 그 자리가 비어 있으면 거기에 놓는다.</summary>
+    public void AddTextAt(Track? track, TimeSpan time)
     {
         if (Project is not { } project) return;
         TextClip? added = null;
-        var time = Position;
-        Edit("텍스트 추가", () => added = project.Sequence.AddText(time, "텍스트"));
+        Edit("텍스트 추가", () => added = project.Sequence.AddText(time, "텍스트", track));
         if (added is not null) Select(added);
-    }
-
-    /// <summary>재생 위치에 2초짜리 자막을 놓고 선택한다. 그 자리에 자막이 있으면 알린다.</summary>
-    [RelayCommand]
-    private void AddCaption()
-    {
-        if (Project is not { } project) return;
-        CaptionClip? added = null;
-        var range = new TimeRange(Position, TimeSpan.FromSeconds(2));
-        Edit("자막 추가", () => added = project.Sequence.AddCaption(null, range, "자막"));
-        if (added is not null) Select(added);
-        else StatusText = "그 자리에 이미 자막이 있습니다. 재생 위치를 옮기거나 다른 자막 트랙을 쓰세요.";
     }
 
     // ───── 속성 패널 ─────
@@ -238,17 +226,17 @@ public partial class MainViewModel
         RefreshStylePresets();
     }
 
-    /// <summary>선택한 자막의 스타일을 같은 트랙의 모든 자막에 복사한다. 문구와 시간은 그대로다.</summary>
+    /// <summary>선택한 텍스트의 스타일을 같은 트랙의 모든 텍스트에 복사한다. 문구와 시간은 그대로다.</summary>
     [RelayCommand]
     private void ApplyStyleToTrack()
     {
         if (Project is not { } project || FirstText is not { } source) return;
-        Edit("모든 자막에 스타일 적용", () => SequenceEdits.ApplyStyleToTrack(project.Sequence, source));
+        Edit("모든 텍스트에 스타일 적용", () => SequenceEdits.ApplyStyleToTrack(project.Sequence, source));
     }
 
     // ───── 자막 파일 ─────
 
-    /// <summary>SRT·VTT 파일의 자막을 새 자막 트랙에 넣는다. 스타일은 기존 자막 트랙의 첫 자막을 따른다.</summary>
+    /// <summary>SRT·VTT 파일의 자막을 맨 위의 새 영상 트랙에 텍스트 클립으로 넣는다.</summary>
     public void ImportSubtitles(string path)
     {
         if (Project is not { } project) return;
@@ -273,26 +261,24 @@ public partial class MainViewModel
         var skipped = 0;
         Edit("자막 가져오기", () =>
         {
-            var style = project.Sequence.Tracks.OfType<CaptionTrack>().SelectMany(track => track.Clips).OfType<CaptionClip>()
-                .FirstOrDefault()?.Style;
-            var track = project.Sequence.AddTrack<CaptionTrack>();
+            var track = project.Sequence.AddTrack<VideoTrack>();
             foreach (var cue in cues)
             {
                 // 파일 안에서 시간이 겹치는 자막은 한 트랙에 놓을 수 없어 건너뛴다.
-                if (project.Sequence.AddCaption(track, cue.Range, cue.Text) is not { } clip) skipped++;
-                else if (style is not null) clip.Style = style.Clone();
+                if (project.Sequence.AddSubtitle(track, cue.Range, cue.Text) is null) skipped++;
             }
         });
         StatusText = $"자막 {cues.Count - skipped}개를 가져왔습니다." + (skipped > 0 ? $" (시간이 겹쳐 건너뛴 자막 {skipped}개)" : "");
     }
 
-    /// <summary>자막 트랙의 자막을 SRT 파일로 저장한다.</summary>
-    public void ExportSubtitles(CaptionTrack track, string path)
+    /// <summary>트랙의 텍스트 클립들을 SRT 파일로 저장한다.</summary>
+    public void ExportSubtitles(VideoTrack track, string path)
     {
         try
         {
-            Subtitles.SaveSrt(path, track.Clips.OfType<CaptionClip>().Select(clip => new Cue(clip.Range, clip.Text)));
-            StatusText = $"자막 {track.Clips.Count}개를 저장했습니다: {path}";
+            var cues = track.Clips.OfType<TextClip>().Select(clip => new Cue(clip.Range, clip.Text)).ToList();
+            Subtitles.SaveSrt(path, cues);
+            StatusText = $"자막 {cues.Count}개를 저장했습니다: {path}";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -300,5 +286,7 @@ public partial class MainViewModel
         }
     }
 
-    public List<CaptionTrack> CaptionTracks() => Project?.Sequence.Tracks.OfType<CaptionTrack>().ToList() ?? [];
+    /// <summary>텍스트 클립이 하나라도 있는 영상 트랙들.</summary>
+    public List<VideoTrack> TextTracks() =>
+        Project?.Sequence.Tracks.OfType<VideoTrack>().Where(track => track.Clips.OfType<TextClip>().Any()).ToList() ?? [];
 }

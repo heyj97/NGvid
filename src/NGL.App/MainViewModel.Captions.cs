@@ -3,13 +3,13 @@ using NGL.Core;
 
 namespace NGL.App;
 
-/// <summary>자막 목록 창에서 쓰는 동작.</summary>
+/// <summary>텍스트 목록 창에서 쓰는 동작.</summary>
 public partial class MainViewModel
 {
     /// <summary>시퀀스가 바뀔 때마다(편집, 실행 취소) 알린다.</summary>
     public event Action? SequenceEdited;
 
-    private CaptionClip? CaptionOf(Guid id) => AllClips.OfType<CaptionClip>().FirstOrDefault(clip => clip.Id == id);
+    private TextClip? CaptionOf(Guid id) => AllClips.OfType<TextClip>().FirstOrDefault(clip => clip.Id == id);
 
     /// <summary>자막의 시간과 문구를 바꾼다. 끝이 시작보다 앞서거나 다른 자막과 겹치면 시간은 바꾸지 않는다.</summary>
     public void EditCaption(Guid id, TimeSpan start, TimeSpan end, string text)
@@ -28,12 +28,12 @@ public partial class MainViewModel
     }
 
     /// <summary>트랙의 마지막 자막 뒤(재생 위치가 더 뒤면 재생 위치)에 2초짜리 자막을 놓는다.</summary>
-    public void AddCaptionAtEnd(CaptionTrack track)
+    public void AddCaptionAtEnd(VideoTrack track)
     {
         if (Project is not { } project) return;
         var end = track.Clips.Select(clip => clip.Range.End).DefaultIfEmpty(TimeSpan.Zero).Max();
         var range = new TimeRange(Position > end ? Position : end, TimeSpan.FromSeconds(2));
-        Edit("자막 추가", () => project.Sequence.AddCaption(track, range, "자막"));
+        Edit("자막 추가", () => project.Sequence.AddSubtitle(track, range, "자막"));
     }
 
     public void DeleteCaption(Guid id)
@@ -54,6 +54,6 @@ public partial class MainViewModel
     public void ApplyCaptionStyleToTrack(Guid id)
     {
         if (Project is { } project && CaptionOf(id) is { } clip)
-            Edit("모든 자막에 스타일 적용", () => SequenceEdits.ApplyStyleToTrack(project.Sequence, clip));
+            Edit("모든 텍스트에 스타일 적용", () => SequenceEdits.ApplyStyleToTrack(project.Sequence, clip));
     }
 }

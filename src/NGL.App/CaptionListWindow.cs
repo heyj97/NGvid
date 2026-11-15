@@ -10,7 +10,7 @@ using NGL.Core;
 namespace NGL.App;
 
 /// <summary>자막 목록의 한 줄. 칸을 고치면 바로 편집으로 반영된다.</summary>
-public sealed class CaptionRow(MainViewModel owner, CaptionClip clip)
+public sealed class CaptionRow(MainViewModel owner, TextClip clip)
 {
     public Guid Id { get; } = clip.Id;
     public TimeSpan StartTime { get; } = clip.Range.Start;
@@ -40,7 +40,7 @@ public sealed class CaptionRow(MainViewModel owner, CaptionClip clip)
     }
 }
 
-/// <summary>한 자막 트랙의 문구와 시간을 표로 고치고, SRT·VTT를 가져오거나 SRT로 내보낸다.</summary>
+/// <summary>텍스트가 있는 한 트랙의 문구와 시간을 표로 고치고, SRT·VTT를 가져오거나 SRT로 내보낸다.</summary>
 public sealed class CaptionListWindow : Window
 {
     private readonly MainViewModel _owner;
@@ -58,7 +58,7 @@ public sealed class CaptionListWindow : Window
     public CaptionListWindow(MainViewModel owner)
     {
         _owner = owner;
-        Title = "자막 목록";
+        Title = "텍스트 목록";
         Width = 820;
         Height = 520;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -83,7 +83,7 @@ public sealed class CaptionListWindow : Window
         buttons.Children.Add(Button("행 삭제", "CaptionDeleteButton", () => { if (_grid.SelectedItem is CaptionRow row) _owner.DeleteCaption(row.Id); }));
         buttons.Children.Add(Button("SRT·VTT 가져오기", "CaptionImportButton", Import));
         buttons.Children.Add(Button("SRT 내보내기", "CaptionExportButton", Export));
-        buttons.Children.Add(Button("모든 자막에 스타일 적용", "CaptionStyleButton", ApplyStyle));
+        buttons.Children.Add(Button("모든 텍스트에 스타일 적용", "CaptionStyleButton", ApplyStyle));
 
         var panel = new DockPanel { Margin = new Thickness(20) };
         DockPanel.SetDock(buttons, Dock.Top);
@@ -104,8 +104,8 @@ public sealed class CaptionListWindow : Window
         RefreshTracks();
     }
 
-    private CaptionTrack? SelectedTrack =>
-        _owner.CaptionTracks() is var tracks && _tracks.SelectedIndex >= 0 && _tracks.SelectedIndex < tracks.Count
+    private VideoTrack? SelectedTrack =>
+        _owner.TextTracks() is var tracks && _tracks.SelectedIndex >= 0 && _tracks.SelectedIndex < tracks.Count
             ? tracks[_tracks.SelectedIndex]
             : null;
 
@@ -114,7 +114,7 @@ public sealed class CaptionListWindow : Window
     private void RefreshTracks()
     {
         var index = Math.Max(0, _tracks.SelectedIndex);
-        var names = _owner.CaptionTracks().Select(track => track.Name).ToList();
+        var names = _owner.TextTracks().Select(track => track.Name).ToList();
         _tracks.ItemsSource = names;
         _tracks.SelectedIndex = names.Count == 0 ? -1 : Math.Min(index, names.Count - 1);
         RefreshRows();
@@ -123,7 +123,7 @@ public sealed class CaptionListWindow : Window
     private void RefreshRows()
     {
         var selected = (_grid.SelectedItem as CaptionRow)?.Id;
-        var rows = SelectedTrack?.Clips.OfType<CaptionClip>().Select(clip => new CaptionRow(_owner, clip)).ToList() ?? [];
+        var rows = SelectedTrack?.Clips.OfType<TextClip>().Select(clip => new CaptionRow(_owner, clip)).ToList() ?? [];
         _grid.ItemsSource = rows;
         _grid.SelectedItem = rows.FirstOrDefault(row => row.Id == selected);
     }
@@ -134,7 +134,7 @@ public sealed class CaptionListWindow : Window
         if (dialog.ShowDialog(this) != true) return;
 
         _owner.ImportSubtitles(dialog.FileName);
-        _tracks.SelectedIndex = _owner.CaptionTracks().Count - 1; // 가져온 자막은 새 트랙에 들어간다
+        _tracks.SelectedIndex = 0; // 가져온 자막은 맨 위의 새 트랙에 들어간다
     }
 
     private void Export()
@@ -144,7 +144,7 @@ public sealed class CaptionListWindow : Window
         if (dialog.ShowDialog(this) == true) _owner.ExportSubtitles(track, dialog.FileName);
     }
 
-    /// <summary>고른 줄(없으면 첫 줄)의 스타일을 이 트랙의 모든 자막에 복사한다.</summary>
+    /// <summary>고른 줄(없으면 첫 줄)의 스타일을 이 트랙의 모든 텍스트에 복사한다.</summary>
     private void ApplyStyle()
     {
         var id = (_grid.SelectedItem as CaptionRow)?.Id ?? (_grid.Items.Count > 0 ? ((CaptionRow)_grid.Items[0]).Id : (Guid?)null);

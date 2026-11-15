@@ -33,8 +33,8 @@ public class SerializationTests : IDisposable
         var audioTrack = new AudioTrack { Name = "BGM" };
         audioTrack.Clips.Add(new AudioClip { AssetId = bgm.Id, Range = new TimeRange(Sec(0), Sec(15)), SourceStart = Sec(1.5) });
 
-        var captionTrack = new CaptionTrack { Name = "한국어 자막" };
-        captionTrack.Clips.Add(new CaptionClip { Text = "안녕하세요", Range = new TimeRange(Sec(1), Sec(2)) });
+        var captionTrack = new VideoTrack { Name = "한국어 자막" };
+        captionTrack.Clips.Add(new TextClip { Text = "안녕하세요", Range = new TimeRange(Sec(1), Sec(2)) });
 
         project.Sequence.Tracks.AddRange([videoTrack, audioTrack, captionTrack]);
         return project;
@@ -60,7 +60,7 @@ public class SerializationTests : IDisposable
         Assert.Collection(loaded.Sequence.Tracks,
             track => Assert.IsType<VideoTrack>(track),
             track => Assert.IsType<AudioTrack>(track),
-            track => Assert.IsType<CaptionTrack>(track));
+            track => Assert.IsType<VideoTrack>(track));
         Assert.Equal(project.Sequence.Tracks[0].Id, loaded.Sequence.Tracks[0].Id);
         Assert.Equal("#FF8800", loaded.Sequence.Tracks[0].Color);
 
@@ -75,7 +75,7 @@ public class SerializationTests : IDisposable
         Assert.Equal(project.Sequence.Tracks[0].Clips[2].Range, textClip.Range);
 
         Assert.Equal(Sec(1.5), Assert.IsType<AudioClip>(loaded.Sequence.Tracks[1].Clips[0]).SourceStart);
-        Assert.Equal("안녕하세요", Assert.IsType<CaptionClip>(loaded.Sequence.Tracks[2].Clips[0]).Text);
+        Assert.Equal("안녕하세요", Assert.IsType<TextClip>(loaded.Sequence.Tracks[2].Clips[0]).Text);
         Assert.Equal(project.Sequence.Duration, loaded.Sequence.Duration);
     }
 
@@ -87,7 +87,7 @@ public class SerializationTests : IDisposable
         Assert.Contains("\"version\": 1", json);
         Assert.Contains("\"name\": \"여행 브이로그 1편\"", json);
         Assert.Contains("\"type\": \"VideoClip\"", json);
-        Assert.Contains("\"type\": \"CaptionTrack\"", json);
+        Assert.Contains("\"type\": \"AudioTrack\"", json);
         Assert.Contains("\"kind\": \"Video\"", json);
         Assert.Contains("\"relativePath\": \"media/interview.mp4\"", json);
         Assert.DoesNotContain("\"end\"", json);
