@@ -26,6 +26,15 @@ public class LibraryTests : IDisposable
     /// <summary>썸네일의 (x, y) 픽셀 밝기(초록 채널).</summary>
     private static int Green(Thumbnail thumbnail, int x, int y) => thumbnail.Pixels[(y * thumbnail.Width + x) * 4 + 1];
 
+    [Theory]
+    [InlineData("https://www.youtube.com/watch?v=abc", true)]
+    [InlineData("http://example.com/v.mp4", true)]
+    [InlineData("--exec calc", false)] // yt-dlp 옵션으로 읽히면 안 된다
+    [InlineData("C:\\video.mp4", false)]
+    [InlineData("", false)]
+    public void 링크는_http_주소만_받는다(string text, bool expected) =>
+        Assert.Equal(expected, LinkDownloader.IsLink(text));
+
     [Fact]
     public void 새_프로젝트는_폴더와_파일을_만들고_다시_읽을_수_있다()
     {

@@ -80,6 +80,7 @@
                 <Menu DockPanel.Dock="Left" Background="Transparent" VerticalAlignment="Center" Focusable="False">
                     <MenuItem x:Name="FileMenu" Header="파일" Padding="10,5">
                         <MenuItem Header="새 프로젝트" InputGestureText="Ctrl+N" Click="OnNewClick" />
+                        <MenuItem Header="링크로 프로젝트 시작" Click="OnNewFromLinkClick" />
                         <MenuItem Header="열기" InputGestureText="Ctrl+O" Click="OnOpenClick" />
                         <MenuItem Header="저장" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" />
                         <Separator />
@@ -766,7 +767,8 @@
             <TextBlock Text="NGvid" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0" />
             <TextBlock Text="영상 편집기" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,4,0,24" />
             <Button x:Name="StartNewButton" Content="새 프로젝트" Click="OnNewClick" Style="{StaticResource MainPrimary}" Height="44" Margin="0,0,0,8" />
-            <Button x:Name="StartOpenButton" Content="프로젝트 열기" Click="OnOpenClick" Height="44" Margin="0" />
+            <Button x:Name="StartOpenButton" Content="프로젝트 열기" Click="OnOpenClick" Height="44" Margin="0,0,0,8" />
+            <Button x:Name="StartLinkButton" Content="링크로 프로젝트 시작" Click="OnNewFromLinkClick" Height="44" Margin="0" />
         </StackPanel>
 
         <!-- 타임라인 -->

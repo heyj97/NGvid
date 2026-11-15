@@ -20,6 +20,11 @@
         </Border>
 
         <StackPanel Margin="20">
+            <StackPanel x:Name="LinkPanel" Visibility="Collapsed" Margin="0,0,0,20">
+                <TextBlock Text="영상 링크" Style="{StaticResource Label}" />
+                <TextBox x:Name="LinkBox" Height="40" Padding="12,0" />
+            </StackPanel>
+
             <TextBlock Text="프로젝트 이름" Style="{StaticResource Label}" />
             <TextBox x:Name="NameBox" Height="40" Padding="12,0" />
 
@@ -66,6 +71,7 @@
                 </ListBox>
             </Border>
 
+            <ProgressBar x:Name="DownloadProgress" Visibility="Collapsed" Maximum="100" Margin="0,20,0,0" />
             <TextBlock x:Name="ErrorText" Margin="0,16,0,0" Foreground="#FF7A7A" TextWrapping="Wrap" />
         </StackPanel>
     </DockPanel>

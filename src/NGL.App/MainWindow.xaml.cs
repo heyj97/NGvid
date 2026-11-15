@@ -158,6 +158,9 @@ public partial class MainWindow : Window
     private void OnNewClick(object sender, RoutedEventArgs e) =>
         new NewProjectWindow(_viewModel.CreateProject) { Owner = this }.ShowDialog();
 
+    private void OnNewFromLinkClick(object sender, RoutedEventArgs e) =>
+        new NewProjectWindow(_viewModel.CreateProject, path => _viewModel.Import([path])) { Owner = this }.ShowDialog();
+
     private void OnOpenClick(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Title = "프로젝트 열기", Filter = "NGvid 프로젝트|*.ngvid" };
