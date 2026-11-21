@@ -54,6 +54,93 @@ public class LibraryTests : IDisposable
         Assert.Equal("내 프로젝트", ProjectFolder.Load(_folder).Name);
     }
 
+    /// <summary>스튜디오가 외부 저장한 모양의 폴더를 만든다. 0.bin은 영상, 1.bin은 소리.</summary>
+    private string StudioFolder(string assetFile = "0.bin")
+    {
+        var studio = Path.Combine(_folder, "studio");
+        Directory.CreateDirectory(Path.Combine(studio, "media"));
+        File.Copy(Sample("frames-h264.mp4"), Path.Combine(studio, "media", "0.bin"));
+        File.Copy(Sample("tone-cover.mp3"), Path.Combine(studio, "media", "1.bin"));
+        File.WriteAllText(Path.Combine(studio, "project.json"), $$"""
+            {
+              "format": "new-gen-lab-project", "version": 1,
+              "project": {
+                "name": "현지화 베이스",
+                "videoTracks": [
+                  { "id": "main", "name": "영상 1" },
+                  { "id": "voice", "type": "audio", "name": "내레이션" },
+                  { "id": "music", "type": "bgm", "name": "배경음" }
+                ],
+                "scenes": [
+                  { "id": "a", "asset": "v", "filename": "원본.mp4", "start": 0.5, "end": 1, "timelineStart": 0, "videoX": 10, "videoScale": 150 },
+                  { "id": "b", "asset": "v", "filename": "원본.mp4", "start": 0, "end": 0.5, "timelineStart": 0.5, "removed": true },
+                  { "id": "c", "asset": "없는-미디어", "start": 0, "end": 1, "timelineStart": 2 }
+                ],
+                "captions": [
+                  { "id": "1", "caption": "둘째 화자", "start": 0.1, "end": 0.4, "speaker": 1 },
+                  { "id": "2", "caption": "겹치는 자막", "start": 0.2, "end": 0.3, "speaker": 0 },
+                  { "id": "3", "caption": "  ", "start": 1, "end": 2 }
+                ],
+                "audioClips": [
+                  { "id": "n", "trackId": "voice", "asset": "s", "filename": "tone.mp3", "timelineStart": 0, "duration": 0.5 },
+                  { "id": "m", "trackId": "music", "asset": "s", "timelineStart": 1, "duration": 0.5, "sourceStart": 0.2, "volume": 0.4, "fadeIn": 0.1, "duck": true }
+                ],
+                "hooks": [ { "asset": "v", "time": 0.7, "rank": 1, "reason": "놀라운 주장" }, { "asset": "v", "time": 0.2, "rank": 2, "reason": "지운 구간" } ]
+              },
+              "assets": [ { "id": "v", "file": "{{assetFile}}", "type": "video/mp4" }, { "id": "s", "file": "1.bin", "type": "audio/mpeg" } ]
+            }
+            """);
+        return studio;
+    }
+
+    [Fact]
+    public void 스튜디오의_외부_저장_폴더를_프로젝트로_바꾼다()
+    {
+        var target = Path.Combine(_folder, "ngvid");
+        var (project, skipped) = StudioProjectImporter.Import(StudioFolder(), target);
+        var sequence = project.Sequence;
+
+        Assert.Equal("현지화 베이스", project.Name);
+        Assert.Equal(SequencePreset.Portrait, sequence.Preset);
+        Assert.Equal(2, skipped); // 미디어가 없는 장면, 겹치는 자막
+        Assert.True(File.Exists(Path.Combine(target, "media", "원본.mp4")));
+        Assert.True(File.Exists(Path.Combine(target, "media", "tone.mp3")));
+
+        // 자막 트랙이 맨 위, 그 아래 영상, 그 뒤로 오디오.
+        Assert.Equal(["자막", "영상 1"], sequence.Tracks.OfType<VideoTrack>().Select(track => track.Name));
+        var caption = Assert.IsType<TextClip>(Assert.Single(sequence.Tracks[0].Clips));
+        Assert.Equal("둘째 화자", caption.Text);
+        Assert.Equal("#AAADFF", caption.Style.Color);
+        Assert.Equal(new TimeRange(Sec(0.1), Sec(0.3)), caption.Range);
+
+        // 지운 장면은 빠지고, 남은 장면은 원본의 0.5초부터 0.5초 동안 타임라인 맨 앞에 놓인다.
+        var clip = Assert.IsType<VideoClip>(Assert.Single(sequence.Tracks[1].Clips));
+        Assert.Equal(new TimeRange(Sec(0), Sec(0.5)), clip.Range);
+        Assert.Equal(Sec(0.5), clip.SourceStart);
+        Assert.Equal(108, clip.X, 3);
+        Assert.Equal(1.5, clip.Scale);
+
+        var music = Assert.IsType<AudioTrack>(sequence.Tracks.Single(track => track.Name == "배경음"));
+        var sound = Assert.IsType<AudioClip>(Assert.Single(music.Clips));
+        Assert.Equal((Sec(0.2), 0.4, Sec(0.1)), (sound.SourceStart, sound.Volume, sound.FadeIn));
+        Assert.Equal(sequence.Tracks.Single(track => track.Name == "내레이션").Id, music.DuckUnder);
+
+        // 후킹 추천은 타임라인에 놓인 구간의 것만 마커가 된다. 원본 0.7초 → 타임라인 0.2초.
+        var marker = Assert.Single(sequence.Markers);
+        Assert.Equal((Sec(0.2), "★1 놀라운 주장"), (marker.Time, marker.Name));
+
+        // 저장한 뒤 다시 읽어도 같다.
+        ProjectFolder.Save(project, target);
+        Assert.Equal(ProjectSerializer.Serialize(project), ProjectSerializer.Serialize(ProjectFolder.Load(target)));
+    }
+
+    [Fact]
+    public void 스튜디오_폴더가_아니거나_미디어_경로가_수상하면_가져오지_않는다()
+    {
+        Assert.Throws<InvalidDataException>(() => StudioProjectImporter.Import(_folder, Path.Combine(_folder, "a")));
+        Assert.Throws<InvalidDataException>(() => StudioProjectImporter.Import(StudioFolder("../0.bin"), Path.Combine(_folder, "b")));
+    }
+
     [Fact]
     public void 가져온_파일은_media로_복사되고_종류와_길이가_기록된다()
     {

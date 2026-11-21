@@ -82,6 +82,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// New-Gen Lab 스튜디오에서 외부 저장한 폴더를 NGvid 프로젝트로 바꿔 연다.
+    /// 새 프로젝트는 그 폴더 옆의 "폴더이름 (NGvid)"에 만들고, 스튜디오의 폴더는 건드리지 않는다.
+    /// </summary>
+    public void ImportStudioProject(string studioFolder)
+    {
+        var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(studioFolder)) + " (NGvid)";
+        try
+        {
+            if (File.Exists(ProjectPaths.ProjectFile(folder)))
+                throw new IOException($"이미 가져온 프로젝트가 있습니다: {folder}");
+
+            var (project, skipped) = StudioProjectImporter.Import(studioFolder, folder);
+            ProjectFolder.Save(project, folder);
+            Load(project, folder);
+            StatusText = $"New-Gen Lab 프로젝트를 가져왔습니다: {folder}" + (skipped > 0 ? $" (옮기지 못한 클립·자막 {skipped}개)" : "");
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or DllNotFoundException)
+        {
+            StatusText = e.Message;
+        }
+    }
+
     /// <summary>프로젝트 폴더 또는 그 안의 .ngvid 파일을 연다.</summary>
     public void OpenProject(string path)
     {

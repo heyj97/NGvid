@@ -82,6 +82,7 @@
                         <MenuItem Header="새 프로젝트" InputGestureText="Ctrl+N" Click="OnNewClick" />
                         <MenuItem Header="링크로 프로젝트 시작" Click="OnNewFromLinkClick" />
                         <MenuItem Header="열기" InputGestureText="Ctrl+O" Click="OnOpenClick" />
+                        <MenuItem Header="New-Gen Lab 프로젝트 가져오기…" Click="OnImportStudioClick" />
                         <MenuItem Header="저장" InputGestureText="Ctrl+S" Command="{Binding SaveCommand}" />
                         <Separator />
                         <MenuItem Header="미디어 가져오기" InputGestureText="Ctrl+I" Click="OnImportClick" IsEnabled="{Binding HasProject}" />

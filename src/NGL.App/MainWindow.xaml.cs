@@ -167,6 +167,12 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) == true) _viewModel.OpenProject(dialog.FileName);
     }
 
+    private void OnImportStudioClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "New-Gen Lab 스튜디오에서 외부 저장한 프로젝트 폴더" };
+        if (dialog.ShowDialog(this) == true) _viewModel.ImportStudioProject(dialog.FolderName);
+    }
+
     private void OnImportClick(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Title = "미디어 가져오기", Filter = MediaFilter, Multiselect = true };
